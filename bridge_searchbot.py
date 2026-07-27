@@ -76,6 +76,12 @@ async def on_result(event):
     clean_memory()
     m = event.message
     if not m.sender or not m.sender.bot: return
+    # AUTO-CLICK: Si aparece "selecciona un almacén", click en primer botón
+    if m.text and "selecciona un almacén" in m.text.lower():
+        if m.buttons and m.buttons[0] and m.buttons[0][0]:
+            await asyncio.sleep(0.5)
+            await m.buttons[0][0].click()
+            return
     if m.text and any(x in m.text.lower() for x in ["procesando", "espera", "maldito", "comparte", "terabox", "revisa el anuncio"]): return
     if m.media:
         if user_sessions:
