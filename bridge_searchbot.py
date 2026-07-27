@@ -74,6 +74,7 @@ def replace_ads(text):
 async def on_result(event):
     clean_memory()
     m = event.message
+    print(f'🔔 Mensaje recibido: media={bool(m.media)} text={bool(m.text)} video={bool(getattr(m,"video",False))}', flush=True)
     if not m.sender or not m.sender.bot: return
     
     # AUTO-CLICK 1: "selecciona un método" → click primer botón (Índice de texto)
