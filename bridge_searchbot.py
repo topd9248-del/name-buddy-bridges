@@ -98,14 +98,21 @@ async def on_result(event):
             print(f"❌ Error: {e}", flush=True)
         return
     
-    # Si es texto con botones - SIEMPRE mensaje nuevo
+    # Si es texto con botones - EDITAR mensaje existente
     if m.text and m.buttons and len(m.text) > 20:
         if 'no se encontraron' in m.text.lower(): return
         text = replace_ads(m.text)
         cache_buttons(m)
+        search_msg_id = m.id
+        if search_msg_id in search_results:
+            try:
+                await bot.edit_message(search_results[search_msg_id][0], search_results[search_msg_id][1], text[:4000], buttons=m.buttons)
+                return
+            except: pass
         for uid, session in list(user_sessions.items()):
             try:
-                await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons)
+                sent = await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons, reply_to=session.get('reply_to'))
+                if sent: search_results[search_msg_id] = (session.get('chat_id', GRUPO), sent.id)
             except: pass
             break
 
@@ -117,9 +124,16 @@ async def on_edit(event):
         if 'no se encontraron' in m.text.lower(): return
         text = replace_ads(m.text)
         cache_buttons(m)
+        search_msg_id = m.id
+        if search_msg_id in search_results:
+            try:
+                await bot.edit_message(search_results[search_msg_id][0], search_results[search_msg_id][1], text[:4000], buttons=m.buttons)
+                return
+            except: pass
         for uid, session in list(user_sessions.items()):
             try:
-                await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons)
+                sent = await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons, reply_to=session.get('reply_to'))
+                if sent: search_results[search_msg_id] = (session.get('chat_id', GRUPO), sent.id)
             except: pass
             break
 
