@@ -1,1 +1,1 @@
-worker: python bridge_simple.py
+worker: python run_all.py
