@@ -18,6 +18,7 @@ user_sessions = OrderedDict()
 search_results = {}
 button_map = {}
 rate_limit = {}
+last_click_user = None  # Para rastrear quién hizo click
 
 bot = TelegramClient('search_bridge2', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -73,16 +74,21 @@ def replace_ads(text):
 
 @user.on(events.NewMessage(chats=SEARCH_GROUP))
 async def on_result(event):
+    global last_click_user
     clean_memory()
     m = event.message
     if not m.sender or not m.sender.bot: return
+    
     # AUTO-CLICK: Si aparece "selecciona un almacén", click en primer botón
     if m.text and "selecciona un almacén" in m.text.lower():
         if m.buttons and m.buttons[0] and m.buttons[0][0]:
             await asyncio.sleep(0.5)
             await m.buttons[0][0].click()
             return
+    
     if m.text and any(x in m.text.lower() for x in ["procesando", "espera", "maldito", "comparte", "terabox", "revisa el anuncio"]): return
+    
+    # SI LLEGA UN VIDEO DESPUÉS DE UN CLICK, ENVIARLO AL CANAL
     if m.media:
         if user_sessions:
             uid = list(user_sessions.keys())[-1]
@@ -150,8 +156,15 @@ async def on_user_msg(event):
 
 @bot.on(events.CallbackQuery)
 async def on_click(event):
+    global last_click_user
     data = event.data.decode() if isinstance(event.data, bytes) else event.data
     if not data: return
+    
+    # Guardar quién hizo click para enviar video después
+    if user_sessions:
+        uid = list(user_sessions.keys())[-1]
+        last_click_user = user_sessions[uid]
+    
     if data in button_map:
         try:
             msgs = await user.get_messages(SEARCH_GROUP, ids=[button_map[data][0]])
@@ -183,5 +196,17 @@ async def main():
     asyncio.create_task(heartbeat())
     await asyncio.gather(bot.run_until_disconnected(), user.run_until_disconnected())
 
+class H(BaseHTTPRequestHandler):
+    def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b"OK")
+    def do_HEAD(self): self.send_response(200); self.end_headers()
+def run_server(): HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 10000))), H).serve_forever()
+threading.Thread(target=run_server, daemon=True).start()
+
+def keep_alive():
+    while True:
+        time.sleep(600)
+        try: urllib.request.urlopen(f"http://localhost:{int(os.environ.get('PORT', 10000))}", timeout=5)
+        except: pass
+threading.Thread(target=keep_alive, daemon=True).start()
 
 asyncio.run(main())
