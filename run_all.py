@@ -9,7 +9,6 @@ BRIDGES = [
     "bridge_ltmovie.py",
     "bridge_angela.py",
     "bridge_apple.py",
-    "bridge_chatgpt.py"
 ]
 
 processes = []
