@@ -22,6 +22,15 @@ bot = TelegramClient('search_bridge2', API_ID, API_HASH, retry_delay=3, auto_rec
 user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 SKIP_BUTTONS = ['compartir bot', 'añadir a grupo', 'menú principal', 'share bot', 'add to group', 'main menu']
 
+def cache_buttons(msg):
+    if not msg or not msg.buttons: return None
+    for row in msg.buttons:
+        for btn in row:
+            if btn.data:
+                data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
+                button_map[data] = (msg.id, msg.buttons.index(row), row.index(btn))
+    return msg.buttons
+
 def clean_memory():
     now = time.time()
     expired = [k for k, v in user_sessions.items() if now - v.get('timestamp', 0) > 300]
@@ -93,6 +102,7 @@ async def on_result(event):
     if m.text and m.buttons and len(m.text) > 20:
         if 'no se encontraron' in m.text.lower(): return
         text = replace_ads(m.text)
+        cache_buttons(m)
         for uid, session in list(user_sessions.items()):
             try:
                 await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons, reply_to=session.get('reply_to'))
@@ -106,6 +116,7 @@ async def on_edit(event):
     if m.text and m.buttons and len(m.text) > 20:
         if 'no se encontraron' in m.text.lower(): return
         text = replace_ads(m.text)
+        cache_buttons(m)
         for uid, session in list(user_sessions.items()):
             try:
                 await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons, reply_to=session.get('reply_to'))
