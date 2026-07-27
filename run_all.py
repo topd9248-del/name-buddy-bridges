@@ -7,8 +7,6 @@ BRIDGES = [
     "bridge_searchbot.py",
     "bridge_autofilter.py",
     "bridge_ltmovie.py",
-    "bridge_angela.py",
-    "bridge_apple.py",
 ]
 
 processes = []
