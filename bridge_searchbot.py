@@ -98,14 +98,14 @@ async def on_result(event):
             print(f"❌ Error: {e}", flush=True)
         return
     
-    # Si es texto con botones
+    # Si es texto con botones - SIEMPRE mensaje nuevo
     if m.text and m.buttons and len(m.text) > 20:
         if 'no se encontraron' in m.text.lower(): return
         text = replace_ads(m.text)
         cache_buttons(m)
         for uid, session in list(user_sessions.items()):
             try:
-                await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons, reply_to=session.get('reply_to'))
+                await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons)
             except: pass
             break
 
@@ -119,7 +119,7 @@ async def on_edit(event):
         cache_buttons(m)
         for uid, session in list(user_sessions.items()):
             try:
-                await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons, reply_to=session.get('reply_to'))
+                await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons)
             except: pass
             break
 
