@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urlparse
 API_ID = 28074212
 API_HASH = "b18dae908474a377684922f3e9d5b795"
 BOT_TOKEN = "8894814453:AAGAuF3cjETqYt_mY2os9raZgMxSZtFqD_E"
-SESSION = "1AZWarzQBu2DRpYwmFatVDHX1rQPRW4RV_mcXlR8wM72CuWSe4ydAt5zrCv_z3BIVLEgXLO95vy6sr3GsILS12Nb2yfxoeG6Fguu-scf7bQGt0uxBDwkltxztw8l66ryR_JFedA4Jzi4Jw7O892b1tRX6jZtBvHJyE93krQLZV29PhTtqEEbDrM4ua4hdUSiTuAVQb8HTgBYi2cpJyqNxXnmfHsJ-_HAa-E3ZmD2xbdikFY8CxGXzr-zMMqyB135VrAW0zNUPc_Z69huGTiiJ8Bn9Mim1TAR6gQNrhQIsDEVoOXXX9cvKHhwZcm3sqTcSb3n1-IEOqCbVceazhlCfZTFMjTiPRGg="
+SESSION = "1AZWarzQBuw2Qy79iGpD5cWK5pf1LtqHo8f-gjYTl7G8c4wcEvAXuhRifBWgMyrQeXsW62Jpv2YbE3yQJJC1D520D4CPbkOHM5c9NUlDOaQNGDg4gbTzf00Ye6KlbLifZpgQI9Zk3SO9EeMJlq7MVvqUNUgMpCaxYl3oMcAhhqnzHPgMmdQR9epRSKMU6d_PeQ7NHThlpYHHYB5wpMBz2-IaajdMMXPB4-shgmIHGeh_BdQy6UArhkcLFaxCu-f60MK39MUzYq4UElN0aaSn7HuSfaszh5QlALJQe9AZrP1Jsa7UzErtsZ0JDsoMt6ujcvgpXCYu3xYQkNTQh1s7n-qb4y8uaQZU="
 SEARCH_GROUP = "@Angela2_moviebot"
 SEARCH_ID = 8143714699
 CANAL = "@BuddyMovies_canal"
@@ -16,19 +16,18 @@ GRUPO = "@BuddyMovies_official"
 
 os.environ['PYTHONOPTIMIZE'] = '2'
 gc.set_threshold(5000, 50, 50)
-
 user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
 rate_limit = {}
 
-bot = TelegramClient('angela_bridge', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=10)
-user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=10)
+bot = TelegramClient('angela_bridge', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
+user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 FOOTER = "\n\n➠ 𝖫𝖺𝗍𝖾𝗌𝗍 𝖴𝗉𝗅𝗈𝖺𝖽𝗌: @BuddyMovies_official\n➠ 𝖡𝗈𝗍 𝖴𝗉𝖽𝖺𝗍𝖾𝗌: @BuddyMovies_Bot"
 
 def clean_memory():
     now = time.time()
-    expired = [k for k, v in user_sessions.items() if now - v.get('timestamp', 0) > 600]
+    expired = [k for k, v in user_sessions.items() if now - v.get('timestamp', 0) > 300]
     for k in expired: user_sessions.pop(k, None)
     if len(button_map) > 2000:
         for k in list(button_map.keys())[:1000]: button_map.pop(k, None)
@@ -39,7 +38,7 @@ def check_rate_limit(user_id):
     if user_id in rate_limit:
         recent = [t for t in rate_limit[user_id] if now - t < 60]
         rate_limit[user_id] = recent
-        if len(recent) >= 20: return False
+        if len(recent) >= 15: return False
     else: rate_limit[user_id] = []
     rate_limit[user_id].append(now)
     return True
@@ -59,7 +58,6 @@ def build_buttons(m, our_msg_id):
         r = []
         for btn_idx, btn in enumerate(row):
             text = (btn.text or '').strip()
-            
             if btn.url and 'start=' in btn.url:
                 parsed = urlparse(btn.url)
                 params = parse_qs(parsed.query)
@@ -69,9 +67,7 @@ def build_buttons(m, our_msg_id):
                     button_map[(our_msg_id, fake_data)] = (m.id, row_idx, btn_idx, start_data)
                     r.append(Button.inline(text[:50] if text else '📥', fake_data))
                 continue
-            
             if btn.url: continue
-            
             if btn.data:
                 data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
                 button_map[(our_msg_id, data)] = (m.id, row_idx, btn_idx, None)
@@ -94,13 +90,11 @@ async def on_result(event):
     if not user_sessions: return
     uid = list(user_sessions.keys())[-1]
     s = user_sessions[uid]
-    
     if m.media:
         caption = replace_ads(m.text or "") + FOOTER
         sent = await user.send_file(CANAL, m.media, caption=caption)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
         await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['reply_to'])
-    
     elif m.text and m.buttons:
         sent = await bot.send_message(GRUPO, "...", reply_to=s['reply_to'])
         our_id = sent.id
@@ -146,7 +140,6 @@ async def on_click(event):
     if not data: return
     our_msg_id = event.message_id
     key = (our_msg_id, data)
-    
     if key in button_map:
         info = button_map[key]
         start_param = info[3] if len(info) > 3 else None
@@ -174,17 +167,5 @@ async def main():
     asyncio.create_task(heartbeat())
     await asyncio.gather(bot.run_until_disconnected(), user.run_until_disconnected())
 
-class H(BaseHTTPRequestHandler):
-    def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b"OK")
-    def do_HEAD(self): self.send_response(200); self.end_headers()
-def run_server(): HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 10000))), H).serve_forever()
-threading.Thread(target=run_server, daemon=True).start()
-
-def keep_alive():
-    while True:
-        time.sleep(600)
-        try: urllib.request.urlopen(f"http://localhost:{int(os.environ.get('PORT', 10000))}", timeout=5)
-        except: pass
-threading.Thread(target=keep_alive, daemon=True).start()
 
 asyncio.run(main())
