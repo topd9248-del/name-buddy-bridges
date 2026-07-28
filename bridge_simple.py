@@ -1,4 +1,4 @@
-import asyncio, re, os, gc, time
+import asyncio, re, os, gc, time, json
 from collections import OrderedDict
 from telethon import TelegramClient, events, Button
 from telethon.sessions import StringSession
@@ -16,8 +16,8 @@ search_results = {}
 button_map = {}
 rate_limit = {}
 
-bot = TelegramClient('b1', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=10)
-user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=10)
+bot = TelegramClient('b1', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
+user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 
 def check_rate_limit(user_id):
     now = time.time()
@@ -37,15 +37,28 @@ def replace_ads(text):
 async def on_result(event):
     m = event.message
     if not m.sender or not m.sender.bot: return
-    if m.media and user_sessions:
-        uid = list(user_sessions.keys())[-1]
-        session = user_sessions[uid]
-        raw = replace_ads(m.text or "")
-        sent = await user.send_file(CANAL, m.media, caption=raw)
-        link = f"https://t.me/{CANAL[1:]}/{sent.id}"
-        await bot.send_message(GRUPO, f"🎬 {link}", buttons=[[Button.url("VER", link)]], reply_to=session.get('reply_to'))
-    elif m.text and m.buttons and len(m.text) > 20:
+    
+    # SI LLEGA MEDIA -> ENVIAR AL CANAL Y AL GRUPO
+    if m.media:
+        if user_sessions:
+            uid = list(user_sessions.keys())[-1]
+            session = user_sessions[uid]
+            name = session.get('name', 'Usuario')
+            reply_to = session.get('reply_to')
+            raw = replace_ads(m.text or "")
+            sent = await user.send_file(CANAL, m.media, caption=raw)
+            link = f"https://t.me/{CANAL[1:]}/{sent.id}"
+            await bot.send_message(GRUPO, f"🎬 **{name}**\n\n🔗 {link}", buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=reply_to)
+        return
+    
+    # Si es texto con botones
+    if m.text and m.buttons and len(m.text) > 20:
         text = replace_ads(m.text)
+        for row in m.buttons:
+            for btn in row:
+                if btn.data:
+                    data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
+                    button_map[data] = (m.id, m.buttons.index(row), row.index(btn))
         for uid, session in list(user_sessions.items()):
             try:
                 sent = await bot.send_message(session.get('chat_id', GRUPO), text[:4000], buttons=m.buttons, reply_to=session.get('reply_to'))
@@ -63,17 +76,21 @@ async def on_edit(event):
 
 @bot.on(events.NewMessage)
 async def on_user_msg(event):
-    if event.is_private: return
+    if event.is_private:
+        await event.reply("🎬 ¡BuddyPelis!\n👉 @BuddyMovies_official", buttons=[[Button.url("IR AL GRUPO", "https://t.me/BuddyMovies_official")]])
+        return
     if event.out or not event.text: return
     q = event.text.strip()
     if len(q) < 2 or q.startswith("/"): return
     if not check_rate_limit(event.sender_id): return
+    
+    # Verificar restricción
     try:
-        import json
         if os.path.exists('pendientes.json'):
             with open('pendientes.json') as f:
                 if str(event.sender_id) in json.load(f): return
     except: pass
+    
     name = (await bot.get_entity(event.sender_id)).first_name or "Usuario"
     user_sessions[event.sender_id] = {'name': name, 'chat_id': event.chat_id, 'reply_to': event.message.id, 'timestamp': time.time()}
     await user.send_message(SEARCH_GROUP, f"/search {q}")
@@ -93,6 +110,7 @@ async def on_click(event):
 async def main():
     await user.start()
     await bot.start(bot_token=BOT_TOKEN)
+    print("✅ @BuddyMovies_Bot activo")
     await asyncio.gather(bot.run_until_disconnected(), user.run_until_disconnected())
 
 asyncio.run(main())
