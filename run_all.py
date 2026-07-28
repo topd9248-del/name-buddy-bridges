@@ -1,9 +1,10 @@
 import subprocess, os, sys, time, threading, urllib.request
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-print("🎬 INICIANDO 2 BRIDGES EN RENDER", flush=True)
+print("🎬 INICIANDO 3 BOTS EN RENDER", flush=True)
 
 BRIDGES = [
+    "bridge_invite.py",
     "bridge_simple.py",
     "bridge_searchbot.py"
 ]
@@ -44,6 +45,6 @@ for bridge in BRIDGES:
     threading.Thread(target=start_bridge, args=(bridge,), daemon=True).start()
     time.sleep(2)
 
-print("✅ 2 bridges activos", flush=True)
+print("✅ 3 bots activos", flush=True)
 while True:
     time.sleep(60)
