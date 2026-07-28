@@ -8,6 +8,19 @@ API_HASH = "b18dae908474a377684922f3e9d5b795"
 BOT_TOKEN = "8463069047:AAFw2frWMhqfELqxQzgplSODDC1kRuCJyII"
 SESSION = "1AZWarzQBuzncKy_mbzKcjlq0_XeKVuhMaiHWMBs3kkt9hmss9EcHTh9f9RtgQYkoDx4oXfLs8rnlwzNA8AHxmt47X2J3r4YJr0QVNVzX3meQKnDv1EKsnctVofcPlsHGuXPZutTrhs0-rtMFXO8TYMESuLbcu0BlENZDA6LVWzItTe17yMvgWexGLJMIyhO-yIrRxHr4838YkKxdxUflsSkjtSZIV8W4EWtrd6eOcTcZbaQyJEUT6jcyXrePbmfaOjMoOsx1PJF1dQisoPP_C-mRSHgp59Za4LmBM4EqQgzXeoPdUdXFRDkCJAfjzc3p6lnU7HqEtcKmm2EIzY43vj_iKSroOOo="
 SEARCH = "@TlgramMovieSearch_Bot"
+
+def clean(text):
+    if not text: return ""
+    text = re.sub(r'https?://\S+', '', text)
+    text = re.sub(r'@\w+', '', text)
+    text = re.sub(r'\[.*?\]', '', text)
+    text = re.sub(r'
+
+
++', '
+
+', text)
+    return text.strip()
 CANAL = "@BuddyMovies_canal"
 GRUPO = "@BuddyMovies_official"
 
@@ -30,7 +43,7 @@ async def on_res(event):
     if m.media and sessions:
         uid = list(sessions.keys())[-1]
         s = sessions[uid]
-        raw = (m.text or "") + "\n\n📌 @BuddyNotify_Bot"
+        raw = clean(m.text) + "\n\n📌 @BuddyNotify_Bot"
         sent = await user.send_file(CANAL, m.media, caption=raw)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
         await bot.send_message(GRUPO, f"🎬 {link}", buttons=[[Button.url("VER", link)]], reply_to=s.get('reply_to'))
