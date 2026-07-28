@@ -76,7 +76,7 @@ async def filtrar(event):
         buttons=[[Button.url("💡 ¿Cómo añadir?", ENLACE)]])
     avisos[uid] = msg.id
 
-@bot.on(events.NewMessage(pattern='/reset'))
+@bot.on(events.NewMessage(pattern='/reset', from_users=[ADMIN_ID]))
 async def reset(event):
     if event.sender_id != ADMIN_ID: return
     global META, activo, solo_nuevos
@@ -94,7 +94,7 @@ async def reset(event):
     guardar()
     await event.reply(f"✅ Restricción activada. {len(pendientes)} miembros deben añadir {META} personas.")
 
-@bot.on(events.NewMessage(pattern='/lock'))
+@bot.on(events.NewMessage(pattern='/lock', from_users=[ADMIN_ID]))
 async def lock(event):
     if event.sender_id != ADMIN_ID: return
     global activo, solo_nuevos
@@ -105,7 +105,7 @@ async def lock(event):
     guardar()
     await event.reply(f"🔒 Solo nuevos deberán añadir {META} personas.")
 
-@bot.on(events.NewMessage(pattern='/free'))
+@bot.on(events.NewMessage(pattern='/free', from_users=[ADMIN_ID]))
 async def free(event):
     if event.sender_id != ADMIN_ID: return
     global activo, solo_nuevos
@@ -121,7 +121,7 @@ async def free(event):
         except: pass
     await event.reply(f"🔓 Libre. {c} miembros liberados.")
 
-@bot.on(events.NewMessage(pattern='/panel'))
+@bot.on(events.NewMessage(pattern='/panel', from_users=[ADMIN_ID]))
 async def panel(event):
     if event.sender_id != ADMIN_ID: return
     modo = "Solo nuevos" if solo_nuevos else ("Activado" if activo else "Libre")
