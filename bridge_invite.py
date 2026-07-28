@@ -1,6 +1,5 @@
-import asyncio, json, os, time, urllib.request
+import asyncio, json, os, time
 from telethon import TelegramClient, events, Button
-from telethon.tl.types import InputPhoto
 
 API_ID = 28074212
 API_HASH = "b18dae908474a377684922f3e9d5b795"
@@ -8,9 +7,6 @@ BOT_TOKEN = "8845956181:AAGRxHDEC9DVwNmDT-4ae3KOvDHA46ISRTY"
 GRUPO_ID = -1002311102965
 ADMIN_ID = 7771137226
 META = 5
-FOTO_ID = 5136652973759990866
-FOTO_HASH = 2862346513624004896
-FOTO_REF = bytes.fromhex('0500000000d1a2581e000009796a68ae01a78ebc2560c7f08aeee03186e3305e6a')
 ENLACE = "https://t.me/BuddyMovies_official/1088"
 
 bot = TelegramClient('invite_bot', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -20,14 +16,8 @@ solo_nuevos = False
 archivo = "pendientes.json"
 avisos = {}
 
-def esta_bloqueado(uid):
-    return activo and str(uid) in pendientes
-
 if os.path.exists(archivo):
     with open(archivo) as f: pendientes = json.load(f)
-
-def get_foto():
-    return InputPhoto(id=FOTO_ID, access_hash=FOTO_HASH, file_reference=FOTO_REF)
 
 def guardar():
     with open(archivo, 'w') as f: json.dump(pendientes, f)
@@ -42,13 +32,12 @@ async def chat_action(event):
         pendientes[uid] = 0
         guardar()
         name = event.user.first_name or "Usuario"
-        try:
-            msg = await bot.send_file(GRUPO_ID, get_foto(), caption=f"👤 {name}, para participar necesitas añadir {META} personas.\n📊 0/{META}", buttons=[[Button.url("💡 ¿Cómo se hace?", ENLACE)]])
-        except:
-            msg = await bot.send_message(GRUPO_ID,
-                f"👤 {name}, para participar necesitas añadir {META} personas.\n📊 0/{META}",
-                buttons=[[Button.url("💡 ¿Cómo se hace?", ENLACE)]])
-        avisos[uid] = msg.id
+        await bot.send_message(GRUPO_ID,
+            f"🔒 Hola {name}, no puedes escribir aún.\n\n"
+            f"Para poder escribir debes añadir a {META} personas al grupo.\n\n"
+            f"📊 [{'⬜' * META}] 0/{META}\n\n"
+            f"Sigue estos pasos 👇👇👇",
+            buttons=[[Button.url("💡 PASOS PARA PODER ESCRIBIR 💡", ENLACE)]])
     
     if event.user_added and event.action_message and event.action_message.from_id:
         uid = str(event.action_message.from_id.user_id)
@@ -62,10 +51,6 @@ async def chat_action(event):
                     ent = await bot.get_entity(int(uid))
                     await bot.edit_permissions(GRUPO_ID, int(uid), send_messages=True)
                     await bot.send_message(GRUPO_ID, f"✅ {ent.first_name}, ya puedes hablar.")
-                    if uid in avisos:
-                        try: await bot.delete_messages(GRUPO_ID, avisos[uid])
-                        except: pass
-                        del avisos[uid]
                 except: pass
 
 @bot.on(events.NewMessage(chats=[GRUPO_ID]))
@@ -82,13 +67,12 @@ async def filtrar(event):
     barra = "🟩" * count + "⬜" * (META - count)
     name = (await event.get_sender()).first_name or "Usuario"
     
-    try:
-        msg = await bot.send_file(GRUPO_ID, get_foto(), caption=f"🔒 {name}, no puedes escribir aún.\n📌 Añade {META} personas.\n📊 [{barra}] {count}/{META}", buttons=[[Button.url("💡 ¿Cómo añadir?", ENLACE)]])
-    except:
-        msg = await bot.send_message(GRUPO_ID,
-            f"🔒 {name}, no puedes escribir aún.\n📌 Añade {META} personas.\n📊 [{barra}] {count}/{META}",
-            buttons=[[Button.url("💡 ¿Cómo añadir?", ENLACE)]])
-    avisos[uid] = msg.id
+    await bot.send_message(GRUPO_ID,
+        f"🔒 Hola {name}, no puedes escribir aún.\n\n"
+        f"Para poder escribir debes añadir a {META} personas al grupo.\n\n"
+        f"📊 [{barra}] {count}/{META}\n\n"
+        f"Sigue estos pasos 👇👇👇",
+        buttons=[[Button.url("💡 PASOS PARA PODER ESCRIBIR 💡", ENLACE)]])
 
 @bot.on(events.NewMessage(pattern='/reset', from_users=[ADMIN_ID]))
 async def reset(event):
