@@ -145,19 +145,6 @@ async def main():
     print(f"✅ Bot restricción activo")
     await bot.run_until_disconnected()
 
-# Servidor para Render
-class H(BaseHTTPRequestHandler):
-    def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b"OK")
-    def do_HEAD(self): self.send_response(200); self.end_headers()
-def run_server():
-    HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 10000))), H).serve_forever()
-threading.Thread(target=run_server, daemon=True).start()
 
-def keep_alive():
-    while True:
-        time.sleep(600)
-        try: urllib.request.urlopen(f"http://localhost:{int(os.environ.get('PORT', 10000))}", timeout=5)
-        except: pass
-threading.Thread(target=keep_alive, daemon=True).start()
 
 asyncio.run(main())

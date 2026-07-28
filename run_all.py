@@ -3,6 +3,9 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 print("🎬 INICIANDO 3 BOTS EN RENDER", flush=True)
 
+import resource
+resource.setrlimit(resource.RLIMIT_AS, (400*1024*1024, 400*1024*1024))
+
 BRIDGES = [
     "bridge_invite.py",
     "bridge_simple.py",
