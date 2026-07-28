@@ -30,7 +30,7 @@ async def on_res(event):
     if m.media and sessions:
         uid = list(sessions.keys())[-1]
         s = sessions[uid]
-        raw = m.text or ""
+        raw = (m.text or "") + "\n\n📌 @BuddyNotify_Bot"
         sent = await user.send_file(CANAL, m.media, caption=raw)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
         await bot.send_message(GRUPO, f"🎬 {link}", buttons=[[Button.url("VER", link)]], reply_to=s.get('reply_to'))
