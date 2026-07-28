@@ -1,64 +1,116 @@
-import asyncio, re, os, gc, time
+import asyncio, re, os, time, threading, urllib.request, gc
 from collections import OrderedDict
 from telethon import TelegramClient, events, Button
 from telethon.sessions import StringSession
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 API_ID = 28074212
 API_HASH = "b18dae908474a377684922f3e9d5b795"
 BOT_TOKEN = "8463069047:AAFw2frWMhqfELqxQzgplSODDC1kRuCJyII"
-SESSION = "1AZWarzQBuzncKy_mbzKcjlq0_XeKVuhMaiHWMBs3kkt9hmss9EcHTh9f9RtgQYkoDx4oXfLs8rnlwzNA8AHxmt47X2J3r4YJr0QVNVzX3meQKnDv1EKsnctVofcPlsHGuXPZutTrhs0-rtMFXO8TYMESuLbcu0BlENZDA6LVWzItTe17yMvgWexGLJMIyhO-yIrRxHr4838YkKxdxUflsSkjtSZIV8W4EWtrd6eOcTcZbaQyJEUT6jcyXrePbmfaOjMoOsx1PJF1dQisoPP_C-mRSHgp59Za4LmBM4EqQgzXeoPdUdXFRDkCJAfjzc3p6lnU7HqEtcKmm2EIzY43vj_iKSroOOo="
-SEARCH = "@TlgramMovieSearch_Bot"
+SESSION_READER = "1AZWarzQBuzncKy_mbzKcjlq0_XeKVuhMaiHWMBs3kkt9hmss9EcHTh9f9RtgQYkoDx4oXfLs8rnlwzNA8AHxmt47X2J3r4YJr0QVNVzX3meQKnDv1EKsnctVofcPlsHGuXPZutTrhs0-rtMFXO8TYMESuLbcu0BlENZDA6LVWzItTe17yMvgWexGLJMIyhO-yIrRxHr4838YkKxdxUflsSkjtSZIV8W4EWtrd6eOcTcZbaQyJEUT6jcyXrePbmfaOjMoOsx1PJF1dQisoPP_C-mRSHgp59Za4LmBM4EqQgzXeoPdUdXFRDkCJAfjzc3p6lnU7HqEtcKmm2EIzY43vj_iKSroOOo="
+SEARCH_GROUP = "@TlgramMovieSearch_Bot"
 CANAL = "@BuddyMovies_canal"
 GRUPO = "@BuddyMovies_official"
+FOOTER = "\n\n➠ @BuddyMovies_canal 🎬\n➠ @BuddyMovies_official 💬"
 
-sessions = OrderedDict()
-sr = {}
-bot = TelegramClient('br', API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=10)
-user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=10)
+os.environ['PYTHONOPTIMIZE'] = '2'
+gc.set_threshold(5000, 50, 50)
+user_sessions = OrderedDict()
+button_map = {}
+msg_map = {}
 
-def clean(text):
+bot = TelegramClient('search_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
+reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
+
+def clean_text(text):
     if not text: return ""
-    return re.sub(r'https?://\S+', '', text)
+    text = re.sub(r'https?://\S+', '', text)
+    text = re.sub(r'@(?!BuddyMovies)\w+', '', text)
+    return text.strip()
 
-@user.on(events.NewMessage(chats=SEARCH))
-async def on_res(event):
+def cache_buttons(msg, our_msg_id=None):
+    if not msg or not msg.buttons: return None
+    for row in msg.buttons:
+        for btn in row:
+            if btn.data:
+                data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
+                if our_msg_id:
+                    button_map[(our_msg_id, data)] = (msg.id, msg.buttons.index(row), row.index(btn))
+                button_map[data] = (msg.id, msg.buttons.index(row), row.index(btn))
+
+@reader.on(events.NewMessage(chats=SEARCH_GROUP))
+async def on_result(event):
     m = event.message
     if not m.sender or not m.sender.bot: return
-    if m.text and "selecciona un" in m.text.lower():
+    
+    # AUTO-CLICKS
+    if m.text and "selecciona un método" in m.text.lower():
         if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
-    if m.media and sessions:
-        uid = list(sessions.keys())[-1]
-        s = sessions[uid]
-        raw = clean(m.text or "") + "\n\n📌 @BuddyNotify_Bot"
-        sent = await user.send_file(CANAL, m.media, caption=raw)
+    if m.text and "selecciona un almacén" in m.text.lower():
+        if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
+    
+    if m.media and user_sessions:
+        uid = list(user_sessions.keys())[-1]
+        s = user_sessions[uid]
+        raw = clean_text(m.text or "") + FOOTER
+        sent = await reader.send_file(CANAL, m.media, caption=raw)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
-        await bot.send_message(GRUPO, f"🎬 {link}", buttons=[[Button.url("VER", link)]], reply_to=s.get('reply_to'))
-    elif m.text and m.buttons:
-        for uid, s in list(sessions.items()):
-            try:
-                sent = await bot.send_message(s['chat_id'], m.text[:4000], buttons=m.buttons, reply_to=s.get('reply_to'))
-                if sent: sr[m.id] = (s['chat_id'], sent.id)
-            except: pass
-            break
+        await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
+            buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
 
-@user.on(events.MessageEdited(chats=SEARCH))
+@reader.on(events.MessageEdited(chats=SEARCH_GROUP))
 async def on_edit(event):
     m = event.message
-    if m.text and m.buttons and m.id in sr:
-        try: await bot.edit_message(sr[m.id][0], sr[m.id][1], m.text[:4000], buttons=m.buttons)
+    if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
+    text = clean_text(m.text)
+    if m.id in msg_map:
+        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=m.buttons); return
         except: pass
+    if user_sessions:
+        uid = list(user_sessions.keys())[-1]
+        s = user_sessions[uid]
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=m.buttons, reply_to=s['rid'])
+        if sent:
+            msg_map[m.id] = sent.id
+            cache_buttons(m, sent.id)
 
 @bot.on(events.NewMessage)
-async def on_msg(event):
-    if event.is_private or event.out or not event.text: return
+async def on_user(event):
+    if event.is_private:
+        await event.reply("🎬 ¡BuddyPelis!\n👉 @BuddyMovies_official", buttons=[[Button.url("🎥 IR AL GRUPO", "https://t.me/BuddyMovies_official")]])
+        return
+    if event.out or not event.text: return
     q = event.text.strip()
-    if len(q) < 2 or q.startswith("/"): return
-    sessions[event.sender_id] = {'chat_id': event.chat_id, 'reply_to': event.message.id}
-    await user.send_message(SEARCH, q)
+    if len(q) < 2: return
+    try: name = (await event.get_sender()).first_name or "Usuario"
+    except: name = "Usuario"
+    user_sessions[event.sender_id] = {'name': name, 'rid': event.message.id, 't': time.time()}
+    await reader.send_message(SEARCH_GROUP, q)
+
+@bot.on(events.CallbackQuery)
+async def on_click(event):
+    data = event.data.decode() if isinstance(event.data, bytes) else event.data
+    if not data: return
+    key = (event.message_id, data)
+    info = button_map.get(key) or button_map.get(data)
+    if info:
+        try:
+            msgs = await reader.get_messages(SEARCH_GROUP, ids=[info[0]])
+            if msgs and msgs[0].buttons:
+                await event.answer("⚡")
+                await msgs[0].buttons[info[1]][info[2]].click()
+                return
+        except: pass
+    await event.answer("⏳ Expiró")
 
 async def main():
-    await user.start()
+    await reader.start()
     await bot.start(bot_token=BOT_TOKEN)
-    print("✅ @BuddyNotify_Bot activo")
-    await asyncio.gather(bot.run_until_disconnected(), user.run_until_disconnected())
+    print(f"✅ @BuddyNotify_Bot")
+    await asyncio.gather(bot.run_until_disconnected(), reader.run_until_disconnected())
+
+class H(BaseHTTPRequestHandler):
+    def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b"OK")
+threading.Thread(target=lambda: HTTPServer(("0.0.0.0", int(os.environ.get("PORT",10000))), H).serve_forever(), daemon=True).start()
+
 asyncio.run(main())

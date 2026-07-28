@@ -11,6 +11,7 @@ SESSION_READER = "1AZWarzQBu5hWbHakw_V4c82HJA0uCNxvwdS_2JHHEVUbCghWQtCFrCbvfFEAM
 SEARCH_GROUP = "@pooppuuui"
 CANAL = "@BuddyMovies_canal"
 GRUPO = "@BuddyMovies_official"
+FOOTER = "\n\n➠ @BuddyMovies_canal 🎬\n➠ @BuddyMovies_official 💬"
 
 os.environ['PYTHONOPTIMIZE'] = '2'
 gc.set_threshold(5000, 50, 50)
@@ -18,17 +19,13 @@ user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
 
-bot = TelegramClient('buddy_final_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
+bot = TelegramClient('buddy_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
-
-def clean_memory():
-    now = time.time()
-    for k in [k for k, v in user_sessions.items() if now - v.get('t', 0) > 600]: del user_sessions[k]
-    gc.collect()
 
 def clean_text(text):
     if not text: return ""
     text = re.sub(r'https?://\S+', '', text)
+    text = re.sub(r'@(?!BuddyMovies)\w+', '', text)
     return text.strip()
 
 def cache_buttons(msg, our_msg_id=None):
@@ -43,7 +40,6 @@ def cache_buttons(msg, our_msg_id=None):
 
 @reader.on(events.NewMessage(chats=SEARCH_GROUP))
 async def on_result(event):
-    clean_memory()
     m = event.message
     if not m.sender or not m.sender.bot: return
     if m.text and "buscando" in m.text.lower(): return
@@ -51,22 +47,20 @@ async def on_result(event):
     if m.media and user_sessions:
         uid = list(user_sessions.keys())[-1]
         s = user_sessions[uid]
-        raw = clean_text(m.text or "") + "\n\n📌 @BuddyMovies_Bot"
+        raw = clean_text(m.text or "") + FOOTER
         sent = await reader.send_file(CANAL, m.media, caption=raw)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
-        await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
+        await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
+            buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
 
 @reader.on(events.MessageEdited(chats=SEARCH_GROUP))
 async def on_edit(event):
-    clean_memory()
     m = event.message
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
-    
     text = clean_text(m.text)
     if m.id in msg_map:
         try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=m.buttons); return
         except: pass
-    
     if user_sessions:
         uid = list(user_sessions.keys())[-1]
         s = user_sessions[uid]
@@ -77,9 +71,8 @@ async def on_edit(event):
 
 @bot.on(events.NewMessage)
 async def on_user(event):
-    clean_memory()
     if event.is_private:
-        await event.reply("🎬 ¡BuddyPelis!\n👉 @BuddyMovies_official", buttons=[[Button.url("🎥 IR AL GRUPO", "https://t.me/BuddyMovies_official")]], link_preview=False)
+        await event.reply("🎬 ¡BuddyPelis!\n👉 @BuddyMovies_official", buttons=[[Button.url("🎥 IR AL GRUPO", "https://t.me/BuddyMovies_official")]])
         return
     if event.out or not event.text: return
     q = event.text.strip()
@@ -105,30 +98,14 @@ async def on_click(event):
         except: pass
     await event.answer("⏳ Expiró")
 
-async def heartbeat():
-    while True:
-        await asyncio.sleep(180)
-        try: await bot.get_me(); await reader.get_me(); clean_memory()
-        except: pass
-
 async def main():
     await reader.start()
     await bot.start(bot_token=BOT_TOKEN)
-    print(f"✅ @BuddyMovies_Bot → {GRUPO}")
-    asyncio.create_task(heartbeat())
+    print(f"✅ @BuddyMovies_Bot")
     await asyncio.gather(bot.run_until_disconnected(), reader.run_until_disconnected())
 
-# Servidor HTTP para Render
 class H(BaseHTTPRequestHandler):
     def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b"OK")
-    def do_HEAD(self): self.send_response(200); self.end_headers()
-threading.Thread(target=lambda: HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 10000))), H).serve_forever(), daemon=True).start()
-
-def keep_alive():
-    while True:
-        time.sleep(600)
-        try: urllib.request.urlopen(f"http://localhost:{int(os.environ.get('PORT', 10000))}", timeout=5)
-        except: pass
-threading.Thread(target=keep_alive, daemon=True).start()
+threading.Thread(target=lambda: HTTPServer(("0.0.0.0", int(os.environ.get("PORT",10000))), H).serve_forever(), daemon=True).start()
 
 asyncio.run(main())
