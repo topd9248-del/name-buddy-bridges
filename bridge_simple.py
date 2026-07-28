@@ -91,7 +91,10 @@ async def on_user_msg(event):
                 if str(event.sender_id) in json.load(f): return
     except: pass
     
-    name = (await bot.get_entity(event.sender_id)).first_name or "Usuario"
+    try:
+        name = (await bot.get_entity(event.sender_id)).first_name or "Usuario"
+    except:
+        name = "Usuario"
     user_sessions[event.sender_id] = {'name': name, 'chat_id': event.chat_id, 'reply_to': event.message.id, 'timestamp': time.time()}
     await user.send_message(SEARCH_GROUP, f"/search {q}")
 
