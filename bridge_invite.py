@@ -14,12 +14,12 @@ ENLACE = "https://t.me/BuddyMovies_official/1088"
 bot = TelegramClient('invite_bot', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 pendientes = {}
 activo = False
-
-def esta_bloqueado(uid):
-    return activo and str(uid) in pendientes
 solo_nuevos = False
 archivo = "pendientes.json"
 avisos = {}
+
+def esta_bloqueado(uid):
+    return activo and str(uid) in pendientes
 
 if os.path.exists(archivo):
     with open(archivo) as f: pendientes = json.load(f)
@@ -81,7 +81,6 @@ async def filtrar(event):
 
 @bot.on(events.NewMessage(pattern='/reset', from_users=[ADMIN_ID]))
 async def reset(event):
-    if event.sender_id != ADMIN_ID: return
     global META, activo, solo_nuevos
     solo_nuevos = False
     try:
@@ -99,7 +98,6 @@ async def reset(event):
 
 @bot.on(events.NewMessage(pattern='/lock', from_users=[ADMIN_ID]))
 async def lock(event):
-    if event.sender_id != ADMIN_ID: return
     global activo, solo_nuevos
     solo_nuevos = True
     activo = True
@@ -110,12 +108,8 @@ async def lock(event):
 
 @bot.on(events.NewMessage(pattern='/free', from_users=[ADMIN_ID]))
 async def free(event):
-    if event.sender_id != ADMIN_ID: return
     global activo, solo_nuevos
     activo = False
-
-def esta_bloqueado(uid):
-    return activo and str(uid) in pendientes
     solo_nuevos = False
     pendientes.clear()
     avisos.clear()
@@ -129,7 +123,7 @@ def esta_bloqueado(uid):
 
 @bot.on(events.NewMessage(pattern='/panel', from_users=[ADMIN_ID]))
 async def panel(event):
-    if event.sender_id != ADMIN_ID: return
+    global activo, solo_nuevos
     modo = "Solo nuevos" if solo_nuevos else ("Activado" if activo else "Libre")
     await event.reply(f"⚙️ {modo} | Meta: {META} | Pendientes: {len(pendientes)}")
 
@@ -138,6 +132,7 @@ async def main():
     print(f"✅ Bot restricción activo")
     await bot.run_until_disconnected()
 
+# Servidor para Render
 class H(BaseHTTPRequestHandler):
     def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b"OK")
     def do_HEAD(self): self.send_response(200); self.end_headers()
