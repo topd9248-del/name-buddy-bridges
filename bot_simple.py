@@ -50,5 +50,9 @@ async def main():
     await user.start()
     await bot.start(bot_token=BOT_TOKEN)
     print("✅ Simple")
-    await asyncio.gather(bot.run_until_disconnected(), user.run_until_disconnected())
+    try:
+        await asyncio.gather(bot.run_until_disconnected(), user.run_until_disconnected())
+    except Exception as e:
+        print(f"⚠️ Reconectando: {e}")
+        await asyncio.sleep(5)
 asyncio.run(main())
