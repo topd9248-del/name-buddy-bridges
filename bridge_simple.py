@@ -116,6 +116,15 @@ async def on_edit(event):
 @bot.on(events.NewMessage)
 async def on_user_msg(event):
     clean_memory()
+    # Verificar si el usuario está bloqueado por el bot de restricción
+    try:
+        import json
+        if os.path.exists('pendientes.json'):
+            with open('pendientes.json') as f:
+                p = json.load(f)
+            if str(event.sender_id) in p:
+                return  # No responder
+    except: pass
     if event.is_private:
         await event.reply("🎬 <b>¡BuddyPelis!</b>\n\n📽️ <b>+5 millones de películas y series</b>\n🔍 Busca sin límites en el grupo\n\n👉 <b>Únete:</b> @BuddyMovies_official", buttons=[[Button.url("🎥 IR AL GRUPO", "https://t.me/BuddyMovies_official")]], link_preview=False)
         return

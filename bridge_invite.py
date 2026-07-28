@@ -14,6 +14,9 @@ ENLACE = "https://t.me/BuddyMovies_official/1088"
 bot = TelegramClient('invite_bot', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 pendientes = {}
 activo = False
+
+def esta_bloqueado(uid):
+    return activo and str(uid) in pendientes
 solo_nuevos = False
 archivo = "pendientes.json"
 avisos = {}
@@ -110,6 +113,9 @@ async def free(event):
     if event.sender_id != ADMIN_ID: return
     global activo, solo_nuevos
     activo = False
+
+def esta_bloqueado(uid):
+    return activo and str(uid) in pendientes
     solo_nuevos = False
     pendientes.clear()
     avisos.clear()
