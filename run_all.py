@@ -1,21 +1,16 @@
 import subprocess, os, sys, time, threading, urllib.request, gc
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-print("🎬 3 BOTS ULTRA", flush=True)
-BRIDGES = ["bot_invite.py", "bot_simple.py", "bot_search.py"]
-gc.set_threshold(1000, 10, 10)
+print("🎬 INICIANDO", flush=True)
+
+# Solo 1 bot para probar
+BRIDGES = ["bot_invite.py"]
 
 def start(bot):
-    while True:
-        try:
-            p = subprocess.Popen([sys.executable, bot], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            for line in p.stdout:
-                if line.strip():
-                    print(f"[{bot[:6]}] {line.strip()}", flush=True)
-            p.wait()
-        except: pass
-        time.sleep(3)
-        gc.collect()
+    print(f"🟢 {bot}", flush=True)
+    p = subprocess.Popen([sys.executable, bot], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    for line in p.stdout:
+        print(f"[{bot[:6]}] {line.strip()}", flush=True)
 
 class H(BaseHTTPRequestHandler):
     def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b"OK")
@@ -23,9 +18,10 @@ class H(BaseHTTPRequestHandler):
 threading.Thread(target=lambda: HTTPServer(("0.0.0.0", int(os.environ.get("PORT",10000))), H).serve_forever(), daemon=True).start()
 
 for b in BRIDGES:
-    threading.Thread(target=start, args=(b,), daemon=True).start()
+    t = threading.Thread(target=start, args=(b,))
+    t.start()
     time.sleep(1)
 
+print("✅ VIVO", flush=True)
 while True:
     time.sleep(30)
-    gc.collect()
