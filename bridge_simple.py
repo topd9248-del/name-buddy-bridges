@@ -2,7 +2,6 @@ import asyncio, re, os, threading, gc, time, urllib.request
 from collections import OrderedDict
 from telethon import TelegramClient, events, Button
 from telethon.sessions import StringSession
-from http.server import HTTPServer, BaseHTTPRequestHandler
 
 API_ID = 28074212
 API_HASH = "b18dae908474a377684922f3e9d5b795"
@@ -176,6 +175,5 @@ async def main():
     print(f"✅ @BuddyMovies_Bot → {GRUPO}")
     asyncio.create_task(heartbeat())
     await asyncio.gather(bot.run_until_disconnected(), user.run_until_disconnected())
-
 
 asyncio.run(main())

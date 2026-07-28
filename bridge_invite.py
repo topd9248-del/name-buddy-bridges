@@ -1,8 +1,6 @@
 import asyncio, json, os, time, urllib.request
 from telethon import TelegramClient, events, Button
 from telethon.tl.types import InputPhoto
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import threading
 
 API_ID = 28074212
 API_HASH = "b18dae908474a377684922f3e9d5b795"
@@ -144,7 +142,5 @@ async def main():
     await bot.start(bot_token=BOT_TOKEN)
     print(f"✅ Bot restricción activo")
     await bot.run_until_disconnected()
-
-
 
 asyncio.run(main())
