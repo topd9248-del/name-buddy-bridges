@@ -14,12 +14,7 @@ def clean(text):
     text = re.sub(r'https?://\S+', '', text)
     text = re.sub(r'@\w+', '', text)
     text = re.sub(r'\[.*?\]', '', text)
-    text = re.sub(r'
-
-
-+', '
-
-', text)
+    text = re.sub(r'\n\n\n+', '\n\n', text)
     return text.strip()
 CANAL = "@BuddyMovies_canal"
 GRUPO = "@BuddyMovies_official"
