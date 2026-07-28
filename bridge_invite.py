@@ -1,5 +1,6 @@
 import asyncio, json, os, time, urllib.request
 from telethon import TelegramClient, events, Button
+from telethon.tl.types import InputPhoto
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 
@@ -9,7 +10,9 @@ BOT_TOKEN = "8845956181:AAGRxHDEC9DVwNmDT-4ae3KOvDHA46ISRTY"
 GRUPO_ID = -1002311102965
 ADMIN_ID = 7771137226
 META = 5
-FOTO_ID = 2425
+FOTO_ID = 5136652973759990866
+FOTO_HASH = 2862346513624004896
+FOTO_REF = bytes.fromhex('0500000000d1a2581e000009796a68ae01a78ebc2560c7f08aeee03186e3305e6a')
 ENLACE = "https://t.me/BuddyMovies_official/1088"
 
 bot = TelegramClient('invite_bot', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -25,6 +28,9 @@ def esta_bloqueado(uid):
 if os.path.exists(archivo):
     with open(archivo) as f: pendientes = json.load(f)
 
+def get_foto():
+    return InputPhoto(id=FOTO_ID, access_hash=FOTO_HASH, file_reference=FOTO_REF)
+
 def guardar():
     with open(archivo, 'w') as f: json.dump(pendientes, f)
 
@@ -39,7 +45,7 @@ async def chat_action(event):
         guardar()
         name = event.user.first_name or "Usuario"
         try:
-            msg = await bot.send_file(GRUPO_ID, FOTO_ID, caption=f"👤 {name}, para participar necesitas añadir {META} personas.\n📊 0/{META}", buttons=[[Button.url("💡 ¿Cómo se hace?", ENLACE)]])
+            msg = await bot.send_file(GRUPO_ID, get_foto(), caption=f"👤 {name}, para participar necesitas añadir {META} personas.\n📊 0/{META}", buttons=[[Button.url("💡 ¿Cómo se hace?", ENLACE)]])
         except:
             msg = await bot.send_message(GRUPO_ID,
                 f"👤 {name}, para participar necesitas añadir {META} personas.\n📊 0/{META}",
@@ -79,7 +85,7 @@ async def filtrar(event):
     name = (await event.get_sender()).first_name or "Usuario"
     
     try:
-        msg = await bot.send_file(GRUPO_ID, FOTO_ID, caption=f"🔒 {name}, no puedes escribir aún.\n📌 Añade {META} personas.\n📊 [{barra}] {count}/{META}", buttons=[[Button.url("💡 ¿Cómo añadir?", ENLACE)]])
+        msg = await bot.send_file(GRUPO_ID, get_foto(), caption=f"🔒 {name}, no puedes escribir aún.\n📌 Añade {META} personas.\n📊 [{barra}] {count}/{META}", buttons=[[Button.url("💡 ¿Cómo añadir?", ENLACE)]])
     except:
         msg = await bot.send_message(GRUPO_ID,
             f"🔒 {name}, no puedes escribir aún.\n📌 Añade {META} personas.\n📊 [{barra}] {count}/{META}",
