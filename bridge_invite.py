@@ -9,6 +9,7 @@ BOT_TOKEN = "8845956181:AAGRxHDEC9DVwNmDT-4ae3KOvDHA46ISRTY"
 GRUPO_ID = -1002311102965
 ADMIN_ID = 7771137226
 META = 5
+FOTO_ID = 2425
 ENLACE = "https://t.me/BuddyMovies_official/1088"
 
 bot = TelegramClient('invite_bot', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -37,9 +38,12 @@ async def chat_action(event):
         pendientes[uid] = 0
         guardar()
         name = event.user.first_name or "Usuario"
-        msg = await bot.send_message(GRUPO_ID,
-            f"👤 {name}, para participar necesitas añadir {META} personas.\n📊 0/{META}",
-            buttons=[[Button.url("💡 ¿Cómo se hace?", ENLACE)]])
+        try:
+            msg = await bot.send_file(GRUPO_ID, FOTO_ID, caption=f"👤 {name}, para participar necesitas añadir {META} personas.\n📊 0/{META}", buttons=[[Button.url("💡 ¿Cómo se hace?", ENLACE)]])
+        except:
+            msg = await bot.send_message(GRUPO_ID,
+                f"👤 {name}, para participar necesitas añadir {META} personas.\n📊 0/{META}",
+                buttons=[[Button.url("💡 ¿Cómo se hace?", ENLACE)]])
         avisos[uid] = msg.id
     
     if event.user_added and event.action_message and event.action_message.from_id:
@@ -74,9 +78,12 @@ async def filtrar(event):
     barra = "🟩" * count + "⬜" * (META - count)
     name = (await event.get_sender()).first_name or "Usuario"
     
-    msg = await bot.send_message(GRUPO_ID,
-        f"🔒 {name}, no puedes escribir aún.\n📌 Añade {META} personas.\n📊 [{barra}] {count}/{META}",
-        buttons=[[Button.url("💡 ¿Cómo añadir?", ENLACE)]])
+    try:
+        msg = await bot.send_file(GRUPO_ID, FOTO_ID, caption=f"🔒 {name}, no puedes escribir aún.\n📌 Añade {META} personas.\n📊 [{barra}] {count}/{META}", buttons=[[Button.url("💡 ¿Cómo añadir?", ENLACE)]])
+    except:
+        msg = await bot.send_message(GRUPO_ID,
+            f"🔒 {name}, no puedes escribir aún.\n📌 Añade {META} personas.\n📊 [{barra}] {count}/{META}",
+            buttons=[[Button.url("💡 ¿Cómo añadir?", ENLACE)]])
     avisos[uid] = msg.id
 
 @bot.on(events.NewMessage(pattern='/reset', from_users=[ADMIN_ID]))
