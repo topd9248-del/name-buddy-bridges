@@ -10,7 +10,7 @@ SESSION = "1AZWarzsBu26nRF7Hs09KajSLH4ccYE0-ikzAFCJMv1ujaF5NeS_0-MdQjp-2uFqM3MH-
 GRUPO = "@BuddyMovies_official"
 TIEMPO = 60
 
-BOTS_A_ELIMINAR = ["@BuddyMovies_Bot", "@BuddyNotify_Bot"]
+BOTS_A_ELIMINAR = ["@BuddyMovies_Bot", "@BuddyNotify_Bot", "@BuddyPelis_Bot"]
 
 bot_client = TelegramClient('delete_bot', API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
 user_client = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
