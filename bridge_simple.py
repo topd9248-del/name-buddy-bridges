@@ -67,7 +67,10 @@ async def on_edit(event):
                 if btn.text and 'inicio' in (btn.text or '').lower(): continue
                 r.append(btn)
             if r: btns.append(r)
-        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns if btns else None); return
+        try:
+            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns if btns else None)
+            cache_buttons(m, msg_map[m.id])
+            return
         except: pass
     if user_sessions:
         uid = list(user_sessions.keys())[-1]
