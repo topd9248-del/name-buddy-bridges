@@ -32,6 +32,7 @@ def cache_buttons(msg, our_msg_id=None):
     if not msg or not msg.buttons: return None
     for row in msg.buttons:
         for btn in row:
+            if btn.text and 'inicio' in (btn.text or '').lower(): continue
             if btn.data:
                 data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
                 if our_msg_id:

@@ -28,10 +28,13 @@ def clean_text(text):
     text = re.sub(r'@(?!BuddyMovies)\w+', '', text)
     return text.strip()
 
+SKIP_BUTTONS = ['compartir bot', 'añadir a grupo', 'menú principal', 'share bot', 'add to group', 'main menu', 'inicio']
+
 def cache_buttons(msg, our_msg_id=None):
     if not msg or not msg.buttons: return None
     for row in msg.buttons:
         for btn in row:
+            if btn.text and any(s in (btn.text or '').lower() for s in SKIP_BUTTONS): continue
             if btn.data:
                 data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
                 if our_msg_id:
