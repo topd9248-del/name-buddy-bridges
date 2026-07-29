@@ -1,18 +1,19 @@
 import subprocess, os, sys, time, threading, urllib.request, gc
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-print("🎬 2 BOTS", flush=True)
-BRIDGES = ["bot_invite.py", "bridge_unico.py"]
+print("🎬 2 BOTS PELICULAS", flush=True)
+BRIDGES = ["bridge_simple.py", "bridge_searchbot.py"]
 
 def start(bot):
     while True:
         try:
-            p = subprocess.Popen([sys.executable, bot], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+            p = subprocess.Popen([sys.executable, bot], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             for line in p.stdout:
-                print(f"[{bot[:8]}] {line.strip()}", flush=True)
+                if line.strip():
+                    print(f"[{bot[:8]}] {line.strip()}", flush=True)
             p.wait()
         except: pass
-        time.sleep(5)
+        time.sleep(3)
         gc.collect()
 
 class H(BaseHTTPRequestHandler):
@@ -22,7 +23,7 @@ threading.Thread(target=lambda: HTTPServer(("0.0.0.0", int(os.environ.get("PORT"
 
 for b in BRIDGES:
     threading.Thread(target=start, args=(b,), daemon=True).start()
-    time.sleep(2)
+    time.sleep(1)
 
 while True:
     time.sleep(30)
