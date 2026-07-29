@@ -60,12 +60,27 @@ async def on_edit(event):
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     text = clean_text(m.text)
     if m.id in msg_map:
-        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=m.buttons); return
+        btns = []
+        for row in m.buttons:
+            r = []
+            for btn in row:
+                if btn.text and 'inicio' in (btn.text or '').lower(): continue
+                r.append(btn)
+            if r: btns.append(r)
+        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns if btns else None); return
         except: pass
     if user_sessions:
         uid = list(user_sessions.keys())[-1]
         s = user_sessions[uid]
-        sent = await bot.send_message(GRUPO, text[:4000], buttons=m.buttons, reply_to=s['rid'])
+        # Filtrar botones no deseados
+        btns = []
+        for row in m.buttons:
+            r = []
+            for btn in row:
+                if btn.text and 'inicio' in (btn.text or '').lower(): continue
+                r.append(btn)
+            if r: btns.append(r)
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=btns if btns else None, reply_to=s['rid'])
         if sent:
             msg_map[m.id] = sent.id
             cache_buttons(m, sent.id)

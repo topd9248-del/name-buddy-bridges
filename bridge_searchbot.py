@@ -22,6 +22,19 @@ msg_map = {}
 bot = TelegramClient('search_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 
+SKIP_BUTTONS = ['compartir bot', 'añadir a grupo', 'menú principal', 'share bot', 'add to group', 'main menu', 'inicio']
+
+def filter_buttons(buttons):
+    if not buttons: return None
+    btns = []
+    for row in buttons:
+        r = []
+        for btn in row:
+            if btn.text and any(s in (btn.text or '').lower() for s in SKIP_BUTTONS): continue
+            r.append(btn)
+        if r: btns.append(r)
+    return btns if btns else None
+
 def clean_text(text):
     if not text: return ""
     text = re.sub(r'https?://\S+', '', text)
@@ -67,12 +80,14 @@ async def on_edit(event):
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     text = clean_text(m.text)
     if m.id in msg_map:
-        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=m.buttons); return
+        btns = filter_buttons(m.buttons)
+        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns); return
         except: pass
     if user_sessions:
         uid = list(user_sessions.keys())[-1]
         s = user_sessions[uid]
-        sent = await bot.send_message(GRUPO, text[:4000], buttons=m.buttons, reply_to=s['rid'])
+        btns = filter_buttons(m.buttons)
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=btns, reply_to=s['rid'])
         if sent:
             msg_map[m.id] = sent.id
             cache_buttons(m, sent.id)
