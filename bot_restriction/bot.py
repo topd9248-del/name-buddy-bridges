@@ -48,10 +48,13 @@ async def on_msg(event):
     await event.delete()
     await bot.edit_permissions(GRUPO_ID, event.sender_id, send_messages=False)
     c = pendientes[uid]
+    name = (await event.get_sender()).first_name or "Usuario"
     await bot.send_message(GRUPO_ID,
-        f"🔒 {(await event.get_sender()).first_name}, no puedes escribir aún.\n\n"
-        f"Añade {META} personas.\n📊 [{'🟩'*c}{'⬜'*(META-c)}] {c}/{META}\n\n👇",
-        buttons=[[Button.url("💡 PASOS PARA ESCRIBIR 💡", ENLACE)]])
+        f"🔒 Hola {name}, no puedes escribir aún.\n\n"
+        f"Para poder escribir debes añadir a {META} personas al grupo.\n\n"
+        f"📊 [{'🟩'*c}{'⬜'*(META-c)}] {c}/{META}\n\n"
+        f"Sigue estos pasos 👇👇👇",
+        buttons=[[Button.url("💡 PASOS PARA PODER ESCRIBIR 💡", ENLACE)]])
 
 @bot.on(events.NewMessage(pattern='/reset', from_users=[ADMIN_ID]))
 async def reset(event):
