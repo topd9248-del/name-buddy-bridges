@@ -51,7 +51,7 @@ async def on_msg(event):
     name = (await event.get_sender()).first_name or "Usuario"
     await bot.send_message(GRUPO_ID,
         f"🔒 Hola {name}, no puedes escribir aún.\n\n"
-        f"Para poder escribir debes añadir a {META} personas al grupo.\n\n"
+        f"Para poder escribir debes añadir a {META} amigos al grupo.\n\n"
         f"📊 [{'🟩'*c}{'⬜'*(META-c)}] {c}/{META}\n\n"
         f"Sigue estos pasos 👇👇👇",
         buttons=[[Button.url("💡 PASOS PARA PODER ESCRIBIR 💡", ENLACE)]])
