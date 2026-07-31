@@ -45,7 +45,6 @@ Usa esto si mencionan un grupo de películas o una franquicia general:
 • Orden: Responde en el mismo orden en que llegaron las preguntas."""
 
 user_questions = {}
-pending_responses = {}
 
 bot = TelegramClient('chatgpt_bot', API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
 user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
@@ -73,29 +72,20 @@ async def on_response(event):
     
     clean = clean_response(m.text)
     
-    # Acumular respuesta parcial
-    if CHATBOT_ID not in pending_responses:
-        pending_responses[CHATBOT_ID] = clean
-    else:
-        pending_responses[CHATBOT_ID] += "\n" + clean
+    # Esperar un poco por si el mensaje se edita con más contenido
+    await asyncio.sleep(1)
     
-    # Esperar 8 segundos para recibir la respuesta completa
-    await asyncio.sleep(8)
-    
-    # Enviar respuesta acumulada
-    if CHATBOT_ID in pending_responses:
-        full_text = pending_responses.pop(CHATBOT_ID)
-        for uid, data in list(user_questions.items()):
-            await bot.send_message(
-                GRUPO,
-                f"🤖 **ChatGPT responde a {data['name']}:**\n\n"
-                f"📝 **{data['question']}**\n\n"
-                f"{full_text[:2000]}",
-                reply_to=data['reply_to']
-            )
-            del user_questions[uid]
-            break
-        print("✅ Respuesta completa enviada")
+    for uid, data in list(user_questions.items()):
+        await bot.send_message(
+            GRUPO,
+            f"🤖 **ChatGPT responde a {data['name']}:**\n\n"
+            f"📝 **{data['question']}**\n\n"
+            f"{clean[:2000]}",
+            reply_to=data['reply_to']
+        )
+        del user_questions[uid]
+        break
+    print("✅ Respuesta enviada")
 
 @bot.on(events.NewMessage)
 async def on_user(event):
