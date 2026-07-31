@@ -45,6 +45,7 @@ Usa esto si mencionan un grupo de películas o una franquicia general:
 • Orden: Responde en el mismo orden en que llegaron las preguntas."""
 
 user_questions = {}
+pending_responses = {}
 
 bot = TelegramClient('chatgpt_bot', API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
 user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
