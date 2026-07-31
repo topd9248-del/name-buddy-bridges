@@ -80,7 +80,7 @@ async def on_response(event):
             GRUPO,
             f"🤖 **ChatGPT responde a {data['name']}:**\n\n"
             f"📝 **{data['question']}**\n\n"
-            f"{clean[:2000]}",
+            f"{clean}",
             reply_to=data['reply_to']
         )
         del user_questions[uid]
@@ -101,7 +101,7 @@ async def on_edit(event):
                     await bot.edit_message(GRUPO, msg.id, 
                         f"🤖 **ChatGPT responde a {data['name']}:**\n\n"
                         f"📝 **{data['question']}**\n\n"
-                        f"{clean[:2000]}")
+                        f"{clean}")
                     break
         except: pass
         break
