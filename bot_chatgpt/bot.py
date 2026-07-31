@@ -87,6 +87,25 @@ async def on_response(event):
         break
     print("✅ Respuesta enviada")
 
+@user.on(events.MessageEdited(from_users=CHATBOT_ID))
+async def on_edit(event):
+    m = event.message
+    if not m.text: return
+    clean = clean_response(m.text)
+    
+    for uid, data in list(user_questions.items()):
+        # Intentar editar el mensaje enviado
+        try:
+            async for msg in bot.iter_messages(GRUPO, limit=5):
+                if msg.text and data['question'] in msg.text:
+                    await bot.edit_message(GRUPO, msg.id, 
+                        f"🤖 **ChatGPT responde a {data['name']}:**\n\n"
+                        f"📝 **{data['question']}**\n\n"
+                        f"{clean[:2000]}")
+                    break
+        except: pass
+        break
+
 @bot.on(events.NewMessage)
 async def on_user(event):
     if event.is_private or event.out or not event.text: return
