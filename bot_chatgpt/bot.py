@@ -74,30 +74,23 @@ async def on_response(event):
     clean = clean_response(m.text)
     
     for uid, data in list(user_questions.items()):
-        # Solo enviar si no hay mensaje previo (primera vez)
-        if uid not in sent_messages:
-            header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
+        header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
+        if uid in sent_messages:
+            # Si ya enviamos, editar
+            try:
+                await bot.edit_message(GRUPO, sent_messages[uid], header + clean)
+                print(f"✏️ Editado: {len(clean)} chars")
+            except:
+                pass
+        else:
+            # Primera vez, enviar nuevo
             sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
             sent_messages[uid] = sent.id
             print(f"✅ Enviado: {len(clean)} chars")
 
 @user.on(events.MessageEdited(from_users=CHATBOT_ID))
 async def on_edit(event):
-    m = event.message
-    if not m.text: return
-    if "used up your credits" in m.text.lower(): return
-    if "upgrade to coze premium" in m.text.lower(): return
-    
-    clean = clean_response(m.text)
-    
-    for uid, data in list(user_questions.items()):
-        if uid in sent_messages:
-            try:
-                header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
-                await bot.edit_message(GRUPO, sent_messages[uid], header + clean)
-                print(f"✏️ Editado: {len(clean)} chars")
-            except:
-                pass
+    pass  # La edición se maneja en on_response
 
 @bot.on(events.NewMessage)
 async def on_user(event):
