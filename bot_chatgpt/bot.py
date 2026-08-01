@@ -45,6 +45,7 @@ Usa esto si mencionan un grupo de películas o una franquicia general:
 • Orden: Responde en el mismo orden en que llegaron las preguntas."""
 
 user_questions = {}
+sent_messages = {}  # Guarda msg_id para editar después
 
 bot = TelegramClient('chatgpt_bot', API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
 user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
@@ -93,17 +94,16 @@ async def on_edit(event):
     if not m.text: return
     clean = clean_response(m.text)
     
+    # Buscar el último usuario que preguntó
     for uid, data in list(user_questions.items()):
-        # Intentar editar el mensaje enviado
-        try:
-            async for msg in bot.iter_messages(GRUPO, limit=5):
-                if msg.text and data['question'] in msg.text:
-                    await bot.edit_message(GRUPO, msg.id, 
-                        f"🤖 **ChatGPT responde a {data['name']}:**\n\n"
-                        f"📝 **{data['question']}**\n\n"
-                        f"{clean}")
-                    break
-        except: pass
+        if uid in sent_messages:
+            try:
+                await bot.edit_message(GRUPO, sent_messages[uid],
+                    f"🤖 **ChatGPT responde a {data['name']}:**\n\n"
+                    f"📝 **{data['question']}**\n\n"
+                    f"{clean}")
+                print(f"✅ Mensaje editado con respuesta completa ({len(clean)} chars)")
+            except: pass
         break
 
 @bot.on(events.NewMessage)
