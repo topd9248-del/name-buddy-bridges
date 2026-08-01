@@ -70,6 +70,8 @@ async def on_response(event):
     m = event.message
     if not m.text: return
     if "please wait" in m.text.lower(): return
+    if "used up your credits" in m.text.lower(): return
+    if "upgrade to coze premium" in m.text.lower(): return
     
     clean = clean_response(m.text)
     
@@ -92,6 +94,8 @@ async def on_response(event):
 async def on_edit(event):
     m = event.message
     if not m.text: return
+    if "used up your credits" in m.text.lower(): return
+    if "upgrade to coze premium" in m.text.lower(): return
     clean = clean_response(m.text)
     
     # Buscar el último usuario que preguntó
