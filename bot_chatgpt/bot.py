@@ -46,6 +46,7 @@ Usa esto si mencionan un grupo de películas o una franquicia general:
 
 user_questions = {}
 sent_messages = {}
+last_response = {}  # Guarda última respuesta por msg_id del bot
 
 bot = TelegramClient('chatgpt_bot', API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
 user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
@@ -63,6 +64,24 @@ def clean_response(text):
     text = re.sub(r'https?://\S+', '', text)
     return text.strip()
 
+async def send_or_edit(clean):
+    """Envía o edita el mensaje en el grupo"""
+    for uid, data in list(user_questions.items()):
+        header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
+        if uid in sent_messages:
+            try:
+                await bot.edit_message(GRUPO, sent_messages[uid], header + clean)
+                print(f"✏️ Editado: {len(clean)} chars")
+            except:
+                sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
+                sent_messages[uid] = sent.id
+                print(f"✅ Re-enviado: {len(clean)} chars")
+        else:
+            sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
+            sent_messages[uid] = sent.id
+            print(f"✅ Enviado: {len(clean)} chars")
+        break
+
 @user.on(events.NewMessage(from_users=CHATBOT_ID))
 async def on_response(event):
     m = event.message
@@ -72,25 +91,20 @@ async def on_response(event):
     if "upgrade to coze premium" in m.text.lower(): return
     
     clean = clean_response(m.text)
-    
-    for uid, data in list(user_questions.items()):
-        header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
-        if uid in sent_messages:
-            # Si ya enviamos, editar
-            try:
-                await bot.edit_message(GRUPO, sent_messages[uid], header + clean)
-                print(f"✏️ Editado: {len(clean)} chars")
-            except:
-                pass
-        else:
-            # Primera vez, enviar nuevo
-            sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
-            sent_messages[uid] = sent.id
-            print(f"✅ Enviado: {len(clean)} chars")
+    last_response['text'] = clean
+    await send_or_edit(clean)
 
 @user.on(events.MessageEdited(from_users=CHATBOT_ID))
 async def on_edit(event):
-    pass  # La edición se maneja en on_response
+    m = event.message
+    if not m.text: return
+    if "used up your credits" in m.text.lower(): return
+    if "upgrade to coze premium" in m.text.lower(): return
+    
+    clean = clean_response(m.text)
+    last_response['text'] = clean
+    await send_or_edit(clean)
+    print(f"📝 Edit detectado: {len(clean)} chars")
 
 @bot.on(events.NewMessage)
 async def on_user(event):
@@ -100,6 +114,10 @@ async def on_user(event):
     
     try: name = (await event.get_sender()).first_name or "Usuario"
     except: name = "Usuario"
+    
+    # Limpiar mensajes anteriores de este usuario
+    if event.sender_id in sent_messages:
+        del sent_messages[event.sender_id]
     
     user_questions[event.sender_id] = {'name': name, 'question': q, 'reply_to': event.message.id}
     prompt = f"{PREFIJO}\n\n{name} puso esto:\n\n: {q}"
