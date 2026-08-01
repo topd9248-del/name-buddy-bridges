@@ -54,6 +54,7 @@ Usa esto si mencionan un grupo de películas o una franquicia general:
 • Orden: Responde en el mismo orden en que llegaron las preguntas."""
 
 user_questions = {}
+last_question_uid = None
 sent_messages = {}
 
 bot = TelegramClient('chatgpt_bot', API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
@@ -89,21 +90,29 @@ def clean_response(text):
     text = re.sub(r'https?://\S+', '', text)
     return text.strip()
 
-async def send_or_edit(clean):
-    for uid, data in list(user_questions.items()):
-        header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
-        if uid in sent_messages:
-            try:
-                await bot.edit_message(GRUPO, sent_messages[uid], header + clean)
-                print(f"✏️ Editado: {len(clean)} chars")
-            except:
-                sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
-                sent_messages[uid] = sent.id
+async def send_or_edit(clean, uid=None):
+    if not uid:
+        # Si no se especifica, usar el primero (para ediciones)
+        if user_questions:
+            uid = list(user_questions.keys())[0]
         else:
+            return
+    
+    data = user_questions.get(uid)
+    if not data: return
+    
+    header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
+    if uid in sent_messages:
+        try:
+            await bot.edit_message(GRUPO, sent_messages[uid], header + clean)
+            print(f"✏️ Editado para {data['name']}: {len(clean)} chars")
+        except:
             sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
             sent_messages[uid] = sent.id
-            print(f"✅ Enviado: {len(clean)} chars")
-        break
+    else:
+        sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
+        sent_messages[uid] = sent.id
+        print(f"✅ Enviado a {data['name']}: {len(clean)} chars")
 
 def setup_handlers():
     @user.on(events.NewMessage(from_users=CHATBOT_ID))
@@ -125,7 +134,7 @@ def setup_handlers():
             return
         
         clean = clean_response(m.text)
-        await send_or_edit(clean)
+        await send_or_edit(clean, last_question_uid)
 
     @user.on(events.MessageEdited(from_users=CHATBOT_ID))
     async def on_edit(event):
@@ -133,7 +142,7 @@ def setup_handlers():
         if not m.text: return
         if "used up your credits" in m.text.lower(): return
         clean = clean_response(m.text)
-        await send_or_edit(clean)
+        await send_or_edit(clean, last_question_uid)
 
 @bot.on(events.NewMessage)
 async def on_user(event):
@@ -148,6 +157,8 @@ async def on_user(event):
         del sent_messages[event.sender_id]
     
     user_questions[event.sender_id] = {'name': name, 'question': q, 'reply_to': event.message.id}
+    global last_question_uid
+    last_question_uid = event.sender_id
     prompt = f"{PREFIJO}\n\n{name} puso esto:\n\n: {q}"
     await user.send_message(CHATBOT, prompt)
 
