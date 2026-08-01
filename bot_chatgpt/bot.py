@@ -74,10 +74,12 @@ async def on_response(event):
     clean = clean_response(m.text)
     
     for uid, data in list(user_questions.items()):
-        header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
-        sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
-        sent_messages[uid] = sent.id
-        print(f"✅ Enviado: {len(clean)} chars")
+        # Solo enviar si no hay mensaje previo (primera vez)
+        if uid not in sent_messages:
+            header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
+            sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
+            sent_messages[uid] = sent.id
+            print(f"✅ Enviado: {len(clean)} chars")
 
 @user.on(events.MessageEdited(from_users=CHATBOT_ID))
 async def on_edit(event):
