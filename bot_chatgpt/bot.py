@@ -45,7 +45,7 @@ Usa esto si mencionan un grupo de películas o una franquicia general:
 • Orden: Responde en el mismo orden en que llegaron las preguntas."""
 
 user_questions = {}
-pending = {}  # Guarda respuesta mientras espera edición
+sent_messages = {}
 
 bot = TelegramClient('chatgpt_bot', API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
 user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
@@ -69,43 +69,33 @@ async def on_response(event):
     if not m.text: return
     if "please wait" in m.text.lower(): return
     if "used up your credits" in m.text.lower(): return
+    if "upgrade to coze premium" in m.text.lower(): return
     
     clean = clean_response(m.text)
     
-    # Guardar respuesta y esperar 3s por si hay edición
-    pending['text'] = clean
-    pending['time'] = time.time()
+    for uid, data in list(user_questions.items()):
+        header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
+        sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
+        sent_messages[uid] = sent.id
+        print(f"✅ Enviado: {len(clean)} chars")
 
 @user.on(events.MessageEdited(from_users=CHATBOT_ID))
 async def on_edit(event):
     m = event.message
     if not m.text: return
     if "used up your credits" in m.text.lower(): return
+    if "upgrade to coze premium" in m.text.lower(): return
     
     clean = clean_response(m.text)
-    pending['text'] = clean
-    pending['time'] = time.time()
-    print(f"✏️ Editado: {len(clean)} chars")
-
-async def send_loop():
-    """Cada 3 segundos revisa si hay respuesta pendiente"""
-    while True:
-        await asyncio.sleep(3)
-        if pending and user_questions:
-            # Si pasaron 3s desde el último mensaje, enviar
-            if time.time() - pending['time'] >= 3:
-                text = pending.pop('text')
-                for uid, data in list(user_questions.items()):
-                    await bot.send_message(
-                        GRUPO,
-                        f"🤖 **ChatGPT responde a {data['name']}:**\n\n"
-                        f"📝 **{data['question']}**\n\n"
-                        f"{text}",
-                        reply_to=data['reply_to']
-                    )
-                    del user_questions[uid]
-                    print(f"✅ Enviado: {len(text)} chars")
-                    break
+    
+    for uid, data in list(user_questions.items()):
+        if uid in sent_messages:
+            try:
+                header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
+                await bot.edit_message(GRUPO, sent_messages[uid], header + clean)
+                print(f"✏️ Editado: {len(clean)} chars")
+            except:
+                pass
 
 @bot.on(events.NewMessage)
 async def on_user(event):
@@ -124,7 +114,6 @@ async def main():
     await user.start()
     await bot.start(bot_token=BOT_TOKEN)
     print("✅ ChatGPT Buddy activo")
-    asyncio.create_task(send_loop())
     await asyncio.gather(bot.run_until_disconnected(), user.run_until_disconnected())
 
 class H(BaseHTTPRequestHandler):
