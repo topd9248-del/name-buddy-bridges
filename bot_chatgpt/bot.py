@@ -6,7 +6,16 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 API_ID = 28074212
 API_HASH = "b18dae908474a377684922f3e9d5b795"
 BOT_TOKEN = "8809406756:AAF89So4ySOmgy_rrb4jm_1TvW5h8cvgIm8"
-SESSION = "1AZWarzQBux0PgvtpPGNQKu_oA9eWx0mFnbhJ8S6TKSXc4C82ka-SBzwbB5Y6ZKIf9_VY_8FcXiqXgA7ai8JL1o0kSkFuDPeBzXO-vpWglyGfbp-Ze-0btTbxR6Imea6vHFtyFDzyANOGqHqxvDOmfL5t0dN4cMAxpcdISzRBdvZ6L9wgmsDFFeIJNNVcCrTyftMHrs9L6fKLZ04fZnDZP7vCBSS-6nHVyEy_S9XrQ18mCKlCInmdewmpqWVI-LIZ6CYQj7ijtKRK4Bmgh4C7x0-F4N5Rtr_32ba7n5gdptIwEilBxeRRIDiJgC_3IF5Ggf2xecfu7zUzFKtHn8_r7YyG90ASqHM="
+
+# 4 sesiones para rotar
+SESSIONS = [
+    "1AZWarzQBux0PgvtpPGNQKu_oA9eWx0mFnbhJ8S6TKSXc4C82ka-SBzwbB5Y6ZKIf9_VY_8FcXiqXgA7ai8JL1o0kSkFuDPeBzXO-vpWglyGfbp-Ze-0btTbxR6Imea6vHFtyFDzyANOGqHqxvDOmfL5t0dN4cMAxpcdISzRBdvZ6L9wgmsDFFeIJNNVcCrTyftMHrs9L6fKLZ04fZnDZP7vCBSS-6nHVyEy_S9XrQ18mCKlCInmdewmpqWVI-LIZ6CYQj7ijtKRK4Bmgh4C7x0-F4N5Rtr_32ba7n5gdptIwEilBxeRRIDiJgC_3IF5Ggf2xecfu7zUzFKtHn8_r7YyG90ASqHM=",
+    "1AZWarzcBu7NWttiJjYomqupi0XGpOJ5CyTJaMLedXyc8o86qAI7wBFwPDVBLhYqIqScZa3YGLstCdP0P6Bw9dYnj1D0zmkGsGCCKjqbnBPCpgUpdT4PiOQ_TJTwJ-WHUnyKLM9_qfinV88uBuHiymc6pFRwDquBilCRwIu6ABkflwxwjiSttzm1mcdO0nF10nU8Ytw1l4v9uGCSv1PA_nwdFkGlDrqnO17ltCQHKpN3aSijsUtItmpPBvV_LezUcGaZB9DbgQcBZF_Scoe68NJxWlZOGOLvc4kh_EXKj8pH-ffVNNBwIzXSSOHhqpZYhappPxo4gec_yL4MfJPikiWabNcAK_lQ=",
+    "1AZWarzcBuwdx0jHcxtjk44SE_RCEMthQYDwuUU47oszDZ6H48tRyhmFEsbLJVC2Ib1biQIJfP43EO1GLHRXuiKNUUiw1546agDENm7oCwAszTV6-dAcSLFJoT1vfvt2gc749ZwAgf-Rt93ejqcc_pDExP4x260d7GVCXmdmuQCQnwfxYt3levb7DXHmK4B5v4xFAZIvsUNhQJktPtHu3Z0pGNz0ckKL97eOPcroPyXvjkq0PF821BY2y13iFcsX7ngQSU3m-51C6EP8GCUDZlE4Wm1CKweiSSwyY0zU3xwzn45JJ2-ysQWUo1ZGqOcqqI6_BNO6C1MO2iSJb7nlbG0xuARFt2sk=",
+    "1AZWarzcBu0MRa5sKIdd7g4cG3sPDxxnGfa9IPC3RS7kfi5nw99fWZCZt4PGRfZD-eyG5gKoFg0VrBMTRSLcfDC0qKWdLiAZJvwiQ744js0LHva6XrPSqOwBi8QD5iwGVaKe8N5rH1Whb9EHWXGoP404VgrMbfOiMG5tuS4bUvfKXMOAMEjLv7rwnAu92jb3dtWjxQCVJJkQGV8Oj1Enw5R8uRqSABK2IkgSX4w7UVAteEpM_NXHRQIaKSbBuFaTRIoUT-9JfoUbcmPplPIfnCYg3QAW6PE-2Np2By5jDd3CBZbXOTRqRJ7jvbYjcM1xj0HxX3HpnYheyXXfhNAF1al4C-unIL2E="
+]
+
+current_session = 0
 CHATBOT = "@CHAT_GTBOT"
 CHATBOT_ID = 5963165469
 GRUPO = "@BuddyMovies_official"
@@ -46,10 +55,26 @@ Usa esto si mencionan un grupo de películas o una franquicia general:
 
 user_questions = {}
 sent_messages = {}
-last_response = {}  # Guarda última respuesta por msg_id del bot
 
 bot = TelegramClient('chatgpt_bot', API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
-user = TelegramClient(StringSession(SESSION), API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
+user = None
+
+def get_user_client():
+    global current_session
+    session = SESSIONS[current_session]
+    return TelegramClient(StringSession(session), API_ID, API_HASH, retry_delay=5, auto_reconnect=True, timeout=15)
+
+async def switch_session():
+    global current_session, user
+    current_session = (current_session + 1) % len(SESSIONS)
+    print(f"🔄 Cambiando a sesión {current_session + 1}/{len(SESSIONS)}")
+    try:
+        await user.disconnect()
+    except: pass
+    user = get_user_client()
+    await user.start()
+    setup_handlers()
+    print(f"✅ Sesión {current_session + 1} activa")
 
 def clean_response(text):
     if not text: return ""
@@ -65,7 +90,6 @@ def clean_response(text):
     return text.strip()
 
 async def send_or_edit(clean):
-    """Envía o edita el mensaje en el grupo"""
     for uid, data in list(user_questions.items()):
         header = f"🤖 **ChatGPT responde a {data['name']}:**\n\n📝 **{data['question']}**\n\n"
         if uid in sent_messages:
@@ -75,36 +99,41 @@ async def send_or_edit(clean):
             except:
                 sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
                 sent_messages[uid] = sent.id
-                print(f"✅ Re-enviado: {len(clean)} chars")
         else:
             sent = await bot.send_message(GRUPO, header + clean, reply_to=data['reply_to'])
             sent_messages[uid] = sent.id
             print(f"✅ Enviado: {len(clean)} chars")
         break
 
-@user.on(events.NewMessage(from_users=CHATBOT_ID))
-async def on_response(event):
-    m = event.message
-    if not m.text: return
-    if "please wait" in m.text.lower(): return
-    if "used up your credits" in m.text.lower(): return
-    if "upgrade to coze premium" in m.text.lower(): return
-    
-    clean = clean_response(m.text)
-    last_response['text'] = clean
-    await send_or_edit(clean)
+def setup_handlers():
+    @user.on(events.NewMessage(from_users=CHATBOT_ID))
+    async def on_response(event):
+        m = event.message
+        if not m.text: return
+        if "please wait" in m.text.lower(): return
+        
+        # Detectar créditos agotados -> cambiar sesión
+        if "used up your credits" in m.text.lower() or "upgrade to coze premium" in m.text.lower():
+            print("⚠️ Créditos agotados - cambiando sesión...")
+            await switch_session()
+            # Reenviar la pregunta pendiente
+            for uid, data in list(user_questions.items()):
+                prompt = f"{PREFIJO}\n\n{data['name']} puso esto:\n\n: {data['question']}"
+                await user.send_message(CHATBOT, prompt)
+                print(f"🔄 Reenviado a nueva sesión: {data['question']}")
+                break
+            return
+        
+        clean = clean_response(m.text)
+        await send_or_edit(clean)
 
-@user.on(events.MessageEdited(from_users=CHATBOT_ID))
-async def on_edit(event):
-    m = event.message
-    if not m.text: return
-    if "used up your credits" in m.text.lower(): return
-    if "upgrade to coze premium" in m.text.lower(): return
-    
-    clean = clean_response(m.text)
-    last_response['text'] = clean
-    await send_or_edit(clean)
-    print(f"📝 Edit detectado: {len(clean)} chars")
+    @user.on(events.MessageEdited(from_users=CHATBOT_ID))
+    async def on_edit(event):
+        m = event.message
+        if not m.text: return
+        if "used up your credits" in m.text.lower(): return
+        clean = clean_response(m.text)
+        await send_or_edit(clean)
 
 @bot.on(events.NewMessage)
 async def on_user(event):
@@ -115,7 +144,6 @@ async def on_user(event):
     try: name = (await event.get_sender()).first_name or "Usuario"
     except: name = "Usuario"
     
-    # Limpiar mensajes anteriores de este usuario
     if event.sender_id in sent_messages:
         del sent_messages[event.sender_id]
     
@@ -124,9 +152,12 @@ async def on_user(event):
     await user.send_message(CHATBOT, prompt)
 
 async def main():
+    global user
+    user = get_user_client()
     await user.start()
+    setup_handlers()
     await bot.start(bot_token=BOT_TOKEN)
-    print("✅ ChatGPT Buddy activo")
+    print(f"✅ ChatGPT Buddy activo - Sesión {current_session + 1}")
     await asyncio.gather(bot.run_until_disconnected(), user.run_until_disconnected())
 
 class H(BaseHTTPRequestHandler):
