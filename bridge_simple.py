@@ -18,7 +18,6 @@ gc.set_threshold(5000, 50, 50)
 user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
-click_user = {}
 
 bot = TelegramClient('buddy_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -39,24 +38,26 @@ async def on_result(event):
     if not m.sender or not m.sender.bot: return
     if m.text and "buscando" in m.text.lower(): return
     
-    if m.media:
-        if click_user:
-            uid = list(click_user.keys())[-1]
-            s = click_user.pop(uid)
-        elif user_sessions:
-            uid = list(user_sessions.keys())[0]
-            s = user_sessions.pop(uid)
-        else:
-            return
+    if m.media and user_sessions:
+        uid = list(user_sessions.keys())[0]
+        s = user_sessions.pop(uid)
         raw = clean_text(m.text or "") + FOOTER
         sent = await reader.send_file(CANAL, m.media, caption=raw)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
-        await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
-    
-    elif m.text and m.buttons and user_sessions:
+        await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
+            buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
+
+@reader.on(events.MessageEdited(chats=SEARCH_GROUP))
+async def on_edit(event):
+    m = event.message
+    if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
+    text = clean_text(m.text)
+    if m.id in msg_map:
+        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=m.buttons); return
+        except: pass
+    if user_sessions:
         uid = list(user_sessions.keys())[0]
-        s = user_sessions.pop(uid)
-        text = clean_text(m.text)
+        s = user_sessions[uid]
         sent = await bot.send_message(GRUPO, text[:4000], buttons=m.buttons, reply_to=s['rid'])
         if sent:
             msg_map[m.id] = sent.id
@@ -66,29 +67,6 @@ async def on_result(event):
                         data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
                         button_map[(sent.id, data)] = (m.id, m.buttons.index(row), row.index(btn))
                         button_map[data] = (m.id, m.buttons.index(row), row.index(btn))
-
-@reader.on(events.MessageEdited(chats=SEARCH_GROUP))
-async def on_edit(event):
-    m = event.message
-    if not m.sender or not m.sender.bot: return
-    if not m.text: return
-    
-    # Si es un resultado NUEVO (no visto antes), enviarlo al grupo
-    if m.id not in msg_map and m.buttons and len(m.text) > 50:
-        if user_sessions:
-            uid = list(user_sessions.keys())[0]
-            s = user_sessions.pop(uid)
-            text = clean_text(m.text)
-            sent = await bot.send_message(GRUPO, text[:4000], buttons=m.buttons, reply_to=s['rid'])
-            if sent:
-                msg_map[m.id] = sent.id
-        return
-    
-    # Si ya lo conocemos, editar
-    text = clean_text(m.text)
-    if m.id in msg_map:
-        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=m.buttons); return
-        except: pass
 
 @bot.on(events.NewMessage)
 async def on_user(event):
@@ -107,9 +85,6 @@ async def on_user(event):
 async def on_click(event):
     data = event.data.decode() if isinstance(event.data, bytes) else event.data
     if not data: return
-    try: name = (await event.get_sender()).first_name or "Usuario"
-    except: name = "Usuario"
-    click_user[event.sender_id] = {'name': name, 'rid': event.message.id}
     key = (event.message_id, data)
     info = button_map.get(key) or button_map.get(data)
     if info:
