@@ -22,6 +22,17 @@ msg_map = {}
 bot = TelegramClient('buddy_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 
+def filter_btns(buttons):
+    if not buttons: return None
+    btns = []
+    for row in buttons:
+        r = []
+        for btn in row:
+            if btn.text and 'inicio' in (btn.text or '').lower(): continue
+            r.append(btn)
+        if r: btns.append(r)
+    return btns if btns else None
+
 def clean_text(text):
     if not text: return ""
     text = re.sub(r'https?://\S+', '', text)
@@ -55,7 +66,7 @@ async def on_edit(event):
     if user_sessions:
         uid = list(user_sessions.keys())[-1]
         s = user_sessions[uid]
-        sent = await bot.send_message(GRUPO, text[:4000], buttons=m.buttons, reply_to=s['rid'])
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=filter_btns(m.buttons), reply_to=s['rid'])
         if sent:
             msg_map[m.id] = sent.id
             for row in m.buttons:
