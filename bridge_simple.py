@@ -18,7 +18,6 @@ gc.set_threshold(5000, 50, 50)
 user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
-click_user = {}
   # msg_id del bot -> uid del usuario
 
 bot = TelegramClient('buddy_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -96,12 +95,6 @@ async def on_user(event):
 async def on_click(event):
     data = event.data.decode() if isinstance(event.data, bytes) else event.data
     if not data: return
-    
-    # Guardar quién hizo click
-    try: name = (await event.get_sender()).first_name or "Usuario"
-    except: name = "Usuario"
-    click_user[event.sender_id] = {'name': name, 'rid': event.message.id}
-    
     key = (event.message_id, data)
     info = button_map.get(key) or button_map.get(data)
     if info:
