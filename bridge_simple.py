@@ -49,14 +49,15 @@ async def on_result(event):
     if not m.sender or not m.sender.bot: return
     if m.text and "buscando" in m.text.lower(): return
     
-    if m.media and user_sessions:
-        uid = list(user_sessions.keys())[-1]
-        s = user_sessions[uid]
-        raw = clean_text(m.text or "") + FOOTER
-        sent = await reader.send_file(CANAL, m.media, caption=raw)
-        link = f"https://t.me/{CANAL[1:]}/{sent.id}"
-        await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
-            buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
+    if m.media:
+        # Buscar el usuario más reciente que hizo una búsqueda
+        for uid, s in reversed(list(user_sessions.items())):
+            raw = clean_text(m.text or "") + FOOTER
+            sent = await reader.send_file(CANAL, m.media, caption=raw)
+            link = f"https://t.me/{CANAL[1:]}/{sent.id}"
+            await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
+                buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
+            break
 
 @reader.on(events.MessageEdited(chats=SEARCH_GROUP))
 async def on_edit(event):
