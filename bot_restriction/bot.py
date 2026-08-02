@@ -50,9 +50,9 @@ async def on_msg(event):
     c = pendientes[uid]
     name = (await event.get_sender()).first_name or "Usuario"
     await bot.send_message(GRUPO_ID,
-        f"🔒 Hola {name}, no puedes escribir aún.\n\n"
-        f"Para poder escribir debes añadir a {META} amigos al grupo.\n\n"
-        f"📊 [{'🟩'*c}{'⬜'*(META-c)}] {c}/{META}\n\n"
+        f"🔒 **Hola {name}**\n\n"
+        f"Para poder seguir escribiendo debes añadir a **{META} amigos** al grupo.\n\n"
+        f"📊 **{c}/{META}**\n\n"
         f"Sigue estos pasos 👇👇👇",
         buttons=[[Button.url("💡 PASOS PARA PODER ESCRIBIR 💡", ENLACE)]])
 
