@@ -18,7 +18,6 @@ gc.set_threshold(5000, 50, 50)
 user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
-  # msg_id del bot -> uid del usuario
 
 bot = TelegramClient('buddy_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -37,6 +36,7 @@ def cache_buttons(msg, our_msg_id=None):
     if not msg or not msg.buttons: return None
     for row in msg.buttons:
         for btn in row:
+            if btn.text and 'inicio' in (btn.text or '').lower(): continue
             if btn.data:
                 data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
                 if our_msg_id:
@@ -49,23 +49,14 @@ async def on_result(event):
     if not m.sender or not m.sender.bot: return
     if m.text and "buscando" in m.text.lower(): return
     
-    # Buscar al usuario que hizo esta búsqueda
-    if not user_sessions: return
-    uid = list(user_sessions.keys())[0]
-    s = user_sessions[uid]
-    
-    if m.media:
+    if m.media and user_sessions:
+        uid = list(user_sessions.keys())[-1]
+        s = user_sessions[uid]
         raw = clean_text(m.text or "") + FOOTER
         sent = await reader.send_file(CANAL, m.media, caption=raw)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
         await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
             buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
-    elif m.text and m.buttons:
-        text = clean_text(m.text)
-        sent = await bot.send_message(GRUPO, text[:4000], buttons=m.buttons, reply_to=s['rid'])
-        if sent:
-            msg_map[m.id] = sent.id
-            cache_buttons(m, sent.id)
 
 @reader.on(events.MessageEdited(chats=SEARCH_GROUP))
 async def on_edit(event):
@@ -73,8 +64,33 @@ async def on_edit(event):
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     text = clean_text(m.text)
     if m.id in msg_map:
-        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=m.buttons); return
+        btns = []
+        for row in m.buttons:
+            r = []
+            for btn in row:
+                if btn.text and 'inicio' in (btn.text or '').lower(): continue
+                r.append(btn)
+            if r: btns.append(r)
+        try:
+            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns if btns else None)
+            cache_buttons(m, msg_map[m.id])
+            return
         except: pass
+    if user_sessions:
+        uid = list(user_sessions.keys())[-1]
+        s = user_sessions[uid]
+        # Filtrar botones no deseados
+        btns = []
+        for row in m.buttons:
+            r = []
+            for btn in row:
+                if btn.text and 'inicio' in (btn.text or '').lower(): continue
+                r.append(btn)
+            if r: btns.append(r)
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=btns if btns else None, reply_to=s['rid'])
+        if sent:
+            msg_map[m.id] = sent.id
+            cache_buttons(m, sent.id)
 
 @bot.on(events.NewMessage)
 async def on_user(event):
@@ -86,10 +102,8 @@ async def on_user(event):
     if len(q) < 2: return
     try: name = (await event.get_sender()).first_name or "Usuario"
     except: name = "Usuario"
-    uid = event.sender_id
-    user_sessions[uid] = {'name': name, 'rid': event.message.id, 't': time.time()}
-    sent = await reader.send_message(SEARCH_GROUP, f"/search {q}")
-    
+    user_sessions[event.sender_id] = {'name': name, 'rid': event.message.id, 't': time.time()}
+    await reader.send_message(SEARCH_GROUP, f"/search {q}")
 
 @bot.on(events.CallbackQuery)
 async def on_click(event):
@@ -118,6 +132,7 @@ class H(BaseHTTPRequestHandler):
 threading.Thread(target=lambda: HTTPServer(("0.0.0.0", int(os.environ.get("PORT",10000))), H).serve_forever(), daemon=True).start()
 
 def keep_alive():
+    import urllib.request
     while True:
         time.sleep(600)
         try: urllib.request.urlopen(f"http://localhost:{int(os.environ.get('PORT', 10000))}", timeout=5)
