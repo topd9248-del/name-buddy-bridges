@@ -50,8 +50,8 @@ async def on_result(event):
     if m.text and "buscando" in m.text.lower(): return
     
     if m.media and user_sessions:
-        uid = list(user_sessions.keys())[-1]
-        s = user_sessions[uid]
+        uid = list(user_sessions.keys())[0]
+        s = user_sessions.pop(uid)  # Sacarlo de la cola
         raw = clean_text(m.text or "") + FOOTER
         sent = await reader.send_file(CANAL, m.media, caption=raw)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
