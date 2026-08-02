@@ -105,6 +105,20 @@ async def on_click(event):
     if not data: return
     key = (event.message_id, data)
     info = button_map.get(key) or button_map.get(data)
+    # Si no encuentra, buscar en todos los botones recientes
+    if not info:
+        try:
+            msgs = await reader.get_messages(SEARCH_GROUP, limit=20)
+            for m in msgs:
+                if m.buttons:
+                    for row in m.buttons:
+                        for btn in row:
+                            bd = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
+                            if bd == data:
+                                await event.answer("⚡")
+                                await btn.click()
+                                return
+        except: pass
     if info:
         try:
             msgs = await reader.get_messages(info[3] if len(info) > 3 else SEARCH_GROUP, ids=[info[0]])
