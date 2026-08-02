@@ -68,7 +68,7 @@ async def on_result(event):
 async def on_edit(event):
     m = event.message
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
-    if "TERABOX" in m.text or "terabox" in m.text.lower(): return
+    if ("TERABOX" in m.text or "terabox" in m.text.lower()) and not m.buttons: return
     text = clean_text(m.text)
     btns = filter_buttons(m.buttons)
     if m.id in msg_map:

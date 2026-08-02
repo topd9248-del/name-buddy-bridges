@@ -37,9 +37,7 @@ async def on_result(event):
     m = event.message
     if not m.sender or not m.sender.bot: return
     if m.text and "buscando" in m.text.lower(): return
-    if m.text and "TERABOX" in m.text: return
-    if m.text and "terabox" in m.text.lower(): return
-    if m.text and "𝗧𝗕" in m.text: return
+    if m.text and ("TERABOX" in m.text or "terabox" in m.text.lower()) and not m.buttons: return
     
     if m.media and user_sessions:
         uid = list(user_sessions.keys())[0]
@@ -54,7 +52,7 @@ async def on_result(event):
 async def on_edit(event):
     m = event.message
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
-    if "TERABOX" in m.text or "terabox" in m.text.lower(): return
+    if ("TERABOX" in m.text or "terabox" in m.text.lower()) and not m.buttons: return
     text = clean_text(m.text)
     if m.id in msg_map:
         btns = []
