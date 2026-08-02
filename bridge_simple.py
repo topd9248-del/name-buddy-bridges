@@ -18,7 +18,7 @@ gc.set_threshold(5000, 50, 50)
 user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
-search_msg_to_user = {}  # msg_id del bot -> uid del usuario
+  # msg_id del bot -> uid del usuario
 
 bot = TelegramClient('buddy_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -50,13 +50,8 @@ async def on_result(event):
     if m.text and "buscando" in m.text.lower(): return
     
     # Buscar al usuario que hizo esta búsqueda
-    uid = search_msg_to_user.get(m.id)
-    if not uid and user_sessions:
-        uid = list(user_sessions.keys())[-1]
-    
-    if not uid or uid not in user_sessions:
-        return
-    
+    if not user_sessions: return
+    uid = list(user_sessions.keys())[0]
     s = user_sessions[uid]
     
     if m.media:
@@ -94,7 +89,7 @@ async def on_user(event):
     uid = event.sender_id
     user_sessions[uid] = {'name': name, 'rid': event.message.id, 't': time.time()}
     sent = await reader.send_message(SEARCH_GROUP, f"/search {q}")
-    search_msg_to_user[sent.id] = uid
+    
 
 @bot.on(events.CallbackQuery)
 async def on_click(event):

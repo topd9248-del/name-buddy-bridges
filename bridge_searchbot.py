@@ -18,7 +18,7 @@ gc.set_threshold(5000, 50, 50)
 user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
-search_msg_to_user = {}
+
 
 bot = TelegramClient('search_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -67,13 +67,8 @@ async def on_result(event):
     if m.text and "selecciona un almacén" in m.text.lower():
         if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
     
-    uid = search_msg_to_user.get(m.id)
-    if not uid and user_sessions:
-        uid = list(user_sessions.keys())[-1]
-    
-    if not uid or uid not in user_sessions:
-        return
-    
+    if not user_sessions: return
+    uid = list(user_sessions.keys())[0]
     s = user_sessions[uid]
     
     if m.media:
@@ -113,7 +108,7 @@ async def on_user(event):
     uid = event.sender_id
     user_sessions[uid] = {'name': name, 'rid': event.message.id, 't': time.time()}
     sent = await reader.send_message(SEARCH_GROUP, q)
-    search_msg_to_user[sent.id] = uid
+    
 
 @bot.on(events.CallbackQuery)
 async def on_click(event):
