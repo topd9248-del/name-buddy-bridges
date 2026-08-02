@@ -29,6 +29,17 @@ def clean_text(text):
     text = text.replace("¡Maldito! No te lo guardes solo para ti, comparte el bot para que todos lo conozcan", "¡Por favor! No te lo guardes solo para ti, comparte el bot para que todos lo conozcan 😊")
     return text.strip()
 
+def filter_btns(buttons):
+    if not buttons: return None
+    btns = []
+    for row in buttons:
+        r = []
+        for btn in row:
+            if btn.text and 'inicio' in (btn.text or '').lower(): continue
+            r.append(btn)
+        if r: btns.append(r)
+    return btns if btns else None
+
 @reader.on(events.NewMessage(chats=SEARCH_GROUP))
 async def on_result(event):
     m = event.message
@@ -49,29 +60,16 @@ async def on_edit(event):
     m = event.message
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     text = clean_text(m.text)
+    fb = filter_btns(m.buttons)
     if m.id in msg_map:
         try:
-            btns = []
-    for row in m.buttons:
-        r = []
-        for btn in row:
-            if btn.text and 'inicio' in (btn.text or '').lower(): continue
-            r.append(btn)
-        if r: btns.append(r)
-    await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns if btns else None)
+            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=fb)
             return
         except: pass
     if user_sessions:
         uid = list(user_sessions.keys())[0]
         s = user_sessions[uid]
-        btns = []
-    for row in m.buttons:
-        r = []
-        for btn in row:
-            if btn.text and 'inicio' in (btn.text or '').lower(): continue
-            r.append(btn)
-        if r: btns.append(r)
-    sent = await bot.send_message(GRUPO, text[:4000], buttons=btns if btns else None, reply_to=s['rid'])
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=fb, reply_to=s['rid'])
         if sent:
             msg_map[m.id] = sent.id
             for row in m.buttons:
