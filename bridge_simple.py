@@ -18,6 +18,7 @@ gc.set_threshold(5000, 50, 50)
 user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
+click_user = {}
 
 bot = TelegramClient('buddy_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -27,18 +28,10 @@ def clean_text(text):
     text = re.sub(r'https?://\S+', '', text)
     text = re.sub(r'@(?!BuddyMovies)\w+', '', text)
     text = text.replace("¡Maldito! No te lo guardes solo para ti, comparte el bot para que todos lo conozcan", "¡Por favor! No te lo guardes solo para ti, comparte el bot para que todos lo conozcan 😊")
+    text = text.replace("Busca películas, animes, series o doramas usando:", "Busca películas, animes, series o doramas usando.")
+    text = text.replace("/search Nombre", "")
+    text = text.replace("Ejemplo: /search Suisei no Gargantia", "")
     return text.strip()
-
-def filter_btns(buttons):
-    if not buttons: return None
-    btns = []
-    for row in buttons:
-        r = []
-        for btn in row:
-            if btn.text and 'inicio' in (btn.text or '').lower(): continue
-            r.append(btn)
-        if r: btns.append(r)
-    return btns if btns else None
 
 @reader.on(events.NewMessage(chats=SEARCH_GROUP))
 async def on_result(event):
@@ -46,30 +39,25 @@ async def on_result(event):
     if not m.sender or not m.sender.bot: return
     if m.text and "buscando" in m.text.lower(): return
     
-    if m.media and user_sessions:
-        uid = list(user_sessions.keys())[0]
-        s = user_sessions.pop(uid)
+    if m.media:
+        if click_user:
+            uid = list(click_user.keys())[-1]
+            s = click_user.pop(uid)
+        elif user_sessions:
+            uid = list(user_sessions.keys())[0]
+            s = user_sessions.pop(uid)
+        else:
+            return
         raw = clean_text(m.text or "") + FOOTER
         sent = await reader.send_file(CANAL, m.media, caption=raw)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
-        await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
-            buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
-
-@reader.on(events.MessageEdited(chats=SEARCH_GROUP))
-async def on_edit(event):
-    m = event.message
-    if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
-    text = clean_text(m.text)
-    fb = filter_btns(m.buttons)
-    if m.id in msg_map:
-        try:
-            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=fb)
-            return
-        except: pass
-    if user_sessions:
+        await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
+    
+    elif m.text and m.buttons and user_sessions:
         uid = list(user_sessions.keys())[0]
-        s = user_sessions[uid]
-        sent = await bot.send_message(GRUPO, text[:4000], buttons=fb, reply_to=s['rid'])
+        s = user_sessions.pop(uid)
+        text = clean_text(m.text)
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=m.buttons, reply_to=s['rid'])
         if sent:
             msg_map[m.id] = sent.id
             for row in m.buttons:
@@ -78,6 +66,15 @@ async def on_edit(event):
                         data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
                         button_map[(sent.id, data)] = (m.id, m.buttons.index(row), row.index(btn))
                         button_map[data] = (m.id, m.buttons.index(row), row.index(btn))
+
+@reader.on(events.MessageEdited(chats=SEARCH_GROUP))
+async def on_edit(event):
+    m = event.message
+    if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
+    text = clean_text(m.text)
+    if m.id in msg_map:
+        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=m.buttons); return
+        except: pass
 
 @bot.on(events.NewMessage)
 async def on_user(event):
@@ -96,8 +93,9 @@ async def on_user(event):
 async def on_click(event):
     data = event.data.decode() if isinstance(event.data, bytes) else event.data
     if not data: return
-    
-    # Estrategia 1: buscar en button_map
+    try: name = (await event.get_sender()).first_name or "Usuario"
+    except: name = "Usuario"
+    click_user[event.sender_id] = {'name': name, 'rid': event.message.id}
     key = (event.message_id, data)
     info = button_map.get(key) or button_map.get(data)
     if info:
@@ -108,20 +106,6 @@ async def on_click(event):
                 await msgs[0].buttons[info[1]][info[2]].click()
                 return
         except: pass
-    
-    # Estrategia 2: buscar en últimos mensajes del bot externo
-    try:
-        async for m in reader.iter_messages(SEARCH_GROUP, limit=30):
-            if m.buttons:
-                for row in m.buttons:
-                    for btn in row:
-                        bd = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
-                        if bd == data:
-                            await event.answer("⚡")
-                            await btn.click()
-                            return
-    except: pass
-    
     await event.answer("⏳ Expiró")
 
 async def main():
