@@ -18,6 +18,7 @@ gc.set_threshold(5000, 50, 50)
 user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
+click_user = {}  # Guarda quién hizo click
 
 bot = TelegramClient('buddy_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -36,7 +37,6 @@ def cache_buttons(msg, our_msg_id=None):
     if not msg or not msg.buttons: return None
     for row in msg.buttons:
         for btn in row:
-            if btn.text and 'inicio' in (btn.text or '').lower(): continue
             if btn.data:
                 data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
                 if our_msg_id:
@@ -49,14 +49,27 @@ async def on_result(event):
     if not m.sender or not m.sender.bot: return
     if m.text and "buscando" in m.text.lower(): return
     
-    if m.media and user_sessions:
+    # Para videos: buscar quién hizo el último click
+    if m.media and click_user:
+        uid = list(click_user.keys())[-1]
+        if uid in click_user:
+            s = click_user.pop(uid)
+            raw = clean_text(m.text or "") + FOOTER
+            sent = await reader.send_file(CANAL, m.media, caption=raw)
+            link = f"https://t.me/{CANAL[1:]}/{sent.id}"
+            await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
+                buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
+            return
+    
+    # Para resultados de búsqueda: usar FIFO
+    if m.text and m.buttons and user_sessions:
         uid = list(user_sessions.keys())[0]
-        s = user_sessions.pop(uid)  # Sacarlo de la cola
-        raw = clean_text(m.text or "") + FOOTER
-        sent = await reader.send_file(CANAL, m.media, caption=raw)
-        link = f"https://t.me/{CANAL[1:]}/{sent.id}"
-        await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
-            buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
+        s = user_sessions.pop(uid)
+        text = clean_text(m.text)
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=m.buttons, reply_to=s['rid'])
+        if sent:
+            msg_map[m.id] = sent.id
+            cache_buttons(m, sent.id)
 
 @reader.on(events.MessageEdited(chats=SEARCH_GROUP))
 async def on_edit(event):
@@ -64,33 +77,8 @@ async def on_edit(event):
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     text = clean_text(m.text)
     if m.id in msg_map:
-        btns = []
-        for row in m.buttons:
-            r = []
-            for btn in row:
-                if btn.text and 'inicio' in (btn.text or '').lower(): continue
-                r.append(btn)
-            if r: btns.append(r)
-        try:
-            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns if btns else None)
-            cache_buttons(m, msg_map[m.id])
-            return
+        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=m.buttons); return
         except: pass
-    if user_sessions:
-        uid = list(user_sessions.keys())[-1]
-        s = user_sessions[uid]
-        # Filtrar botones no deseados
-        btns = []
-        for row in m.buttons:
-            r = []
-            for btn in row:
-                if btn.text and 'inicio' in (btn.text or '').lower(): continue
-                r.append(btn)
-            if r: btns.append(r)
-        sent = await bot.send_message(GRUPO, text[:4000], buttons=btns if btns else None, reply_to=s['rid'])
-        if sent:
-            msg_map[m.id] = sent.id
-            cache_buttons(m, sent.id)
 
 @bot.on(events.NewMessage)
 async def on_user(event):
@@ -109,6 +97,12 @@ async def on_user(event):
 async def on_click(event):
     data = event.data.decode() if isinstance(event.data, bytes) else event.data
     if not data: return
+    
+    # Guardar quién hizo click
+    try: name = (await event.get_sender()).first_name or "Usuario"
+    except: name = "Usuario"
+    click_user[event.sender_id] = {'name': name, 'rid': event.message.id}
+    
     key = (event.message_id, data)
     info = button_map.get(key) or button_map.get(data)
     if info:
@@ -132,7 +126,6 @@ class H(BaseHTTPRequestHandler):
 threading.Thread(target=lambda: HTTPServer(("0.0.0.0", int(os.environ.get("PORT",10000))), H).serve_forever(), daemon=True).start()
 
 def keep_alive():
-    import urllib.request
     while True:
         time.sleep(600)
         try: urllib.request.urlopen(f"http://localhost:{int(os.environ.get('PORT', 10000))}", timeout=5)
