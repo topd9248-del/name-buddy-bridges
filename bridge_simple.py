@@ -27,9 +27,6 @@ def clean_text(text):
     text = re.sub(r'https?://\S+', '', text)
     text = re.sub(r'@(?!BuddyMovies)\w+', '', text)
     text = text.replace("¡Maldito! No te lo guardes solo para ti, comparte el bot para que todos lo conozcan", "¡Por favor! No te lo guardes solo para ti, comparte el bot para que todos lo conozcan 😊")
-    text = text.replace("Busca películas, animes, series o doramas usando:", "Busca películas, animes, series o doramas usando.")
-    text = text.replace("/search Nombre", "")
-    text = text.replace("Ejemplo: /search Suisei no Gargantia", "")
     return text.strip()
 
 @reader.on(events.NewMessage(chats=SEARCH_GROUP))
@@ -37,7 +34,6 @@ async def on_result(event):
     m = event.message
     if not m.sender or not m.sender.bot: return
     if m.text and "buscando" in m.text.lower(): return
-    if m.text and ("TERABOX" in m.text or "terabox" in m.text.lower()) and not m.buttons: return
     
     if m.media and user_sessions:
         uid = list(user_sessions.keys())[0]
@@ -52,30 +48,16 @@ async def on_result(event):
 async def on_edit(event):
     m = event.message
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
-    if ("TERABOX" in m.text or "terabox" in m.text.lower()) and not m.buttons: return
     text = clean_text(m.text)
     if m.id in msg_map:
-        btns = []
-    for row in m.buttons:
-        r = []
-        for btn in row:
-            if btn.text and 'inicio' in (btn.text or '').lower(): continue
-            r.append(btn)
-        if r: btns.append(r)
-    try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns if btns else None); return
+        try:
+            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=m.buttons)
+            return
         except: pass
     if user_sessions:
         uid = list(user_sessions.keys())[0]
         s = user_sessions[uid]
-        # Filtrar botón inicio
-    btns = []
-    for row in m.buttons:
-        r = []
-        for btn in row:
-            if btn.text and 'inicio' in (btn.text or '').lower(): continue
-            r.append(btn)
-        if r: btns.append(r)
-    sent = await bot.send_message(GRUPO, text[:4000], buttons=btns if btns else None, reply_to=s['rid'])
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=m.buttons, reply_to=s['rid'])
         if sent:
             msg_map[m.id] = sent.id
             for row in m.buttons:
