@@ -18,7 +18,7 @@ gc.set_threshold(5000, 50, 50)
 user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
-click_user = {}
+
 
 bot = TelegramClient('search_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
 reader = TelegramClient(StringSession(SESSION_READER), API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -67,22 +67,17 @@ async def on_result(event):
     if m.text and "selecciona un almacén" in m.text.lower():
         if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
     
-    # Video: usar click_user
-    if m.media and click_user:
-        uid = list(click_user.keys())[-1]
-        if uid in click_user:
-            s = click_user.pop(uid)
-            raw = clean_text(m.text or "") + FOOTER
-            sent = await reader.send_file(CANAL, m.media, caption=raw)
-            link = f"https://t.me/{CANAL[1:]}/{sent.id}"
-            await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
-                buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
-            return
+    if not user_sessions: return
+    uid = list(user_sessions.keys())[0]
+    s = user_sessions[uid]
     
-    # Resultados: FIFO
-    if m.text and m.buttons and user_sessions:
-        uid = list(user_sessions.keys())[0]
-        s = user_sessions.pop(uid)
+    if m.media:
+        raw = clean_text(m.text or "") + FOOTER
+        sent = await reader.send_file(CANAL, m.media, caption=raw)
+        link = f"https://t.me/{CANAL[1:]}/{sent.id}"
+        await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
+            buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
+    elif m.text and m.buttons:
         text = clean_text(m.text)
         btns = filter_buttons(m.buttons)
         sent = await bot.send_message(GRUPO, text[:4000], buttons=btns, reply_to=s['rid'])
@@ -110,18 +105,15 @@ async def on_user(event):
     if len(q) < 2: return
     try: name = (await event.get_sender()).first_name or "Usuario"
     except: name = "Usuario"
-    user_sessions[event.sender_id] = {'name': name, 'rid': event.message.id, 't': time.time()}
-    await reader.send_message(SEARCH_GROUP, q)
+    uid = event.sender_id
+    user_sessions[uid] = {'name': name, 'rid': event.message.id, 't': time.time()}
+    sent = await reader.send_message(SEARCH_GROUP, q)
+    
 
 @bot.on(events.CallbackQuery)
 async def on_click(event):
     data = event.data.decode() if isinstance(event.data, bytes) else event.data
     if not data: return
-    
-    try: name = (await event.get_sender()).first_name or "Usuario"
-    except: name = "Usuario"
-    click_user[event.sender_id] = {'name': name, 'rid': event.message.id}
-    
     key = (event.message_id, data)
     info = button_map.get(key) or button_map.get(data)
     if info:
