@@ -26,6 +26,10 @@ def clean_text(text):
     if not text: return ""
     text = re.sub(r'https?://\S+', '', text)
     text = re.sub(r'@(?!BuddyMovies)\w+', '', text)
+    text = text.replace("¡Maldito! No te lo guardes solo para ti, comparte el bot para que todos lo conozcan", "¡Por favor! No te lo guardes solo para ti, comparte el bot para que todos lo conozcan 😊")
+    text = text.replace("Busca películas, animes, series o doramas usando:", "Busca películas, animes, series o doramas usando.")
+    text = text.replace("/search Nombre", "")
+    text = text.replace("Ejemplo: /search Suisei no Gargantia", "")
     return text.strip()
 
 def cache_buttons(msg, our_msg_id=None):
