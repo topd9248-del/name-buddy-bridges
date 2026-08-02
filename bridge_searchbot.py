@@ -1,4 +1,4 @@
-import asyncio, re, os, time, threading, urllib.request, gc
+import asyncio, re, os, time, threading, urllib.request, gc, json
 from collections import OrderedDict
 from telethon import TelegramClient, events, Button
 from telethon.sessions import StringSession
@@ -41,6 +41,16 @@ def filter_buttons(buttons):
         if r: btns.append(r)
     return btns if btns else None
 
+def cache_buttons(msg, our_msg_id):
+    if not msg or not msg.buttons: return
+    for row in msg.buttons:
+        for btn in row:
+            if btn.text and any(s in (btn.text or '').lower() for s in SKIP_BUTTONS): continue
+            if btn.data:
+                data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
+                button_map[(our_msg_id, data)] = (msg.id, msg.buttons.index(row), row.index(btn), msg.chat_id)
+                button_map[data] = (msg.id, msg.buttons.index(row), row.index(btn), msg.chat_id)
+
 @reader.on(events.NewMessage(chats=SEARCH_GROUP))
 async def on_result(event):
     m = event.message
@@ -65,22 +75,22 @@ async def on_edit(event):
     m = event.message
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     text = clean_text(m.text)
-    btns = filter_buttons(m.buttons)
+    fb = filter_buttons(m.buttons)
+    
     if m.id in msg_map:
-        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns); return
+        try:
+            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=fb)
+            cache_buttons(m, msg_map[m.id])
+            return
         except: pass
+    
     if user_sessions:
         uid = list(user_sessions.keys())[-1]
         s = user_sessions[uid]
-        sent = await bot.send_message(GRUPO, text[:4000], buttons=btns, reply_to=s['rid'])
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=fb, reply_to=s['rid'])
         if sent:
             msg_map[m.id] = sent.id
-            for row in m.buttons:
-                for btn in row:
-                    if btn.data:
-                        data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
-                        button_map[(sent.id, data)] = (m.id, m.buttons.index(row), row.index(btn), m.chat_id)
-                        button_map[data] = (m.id, m.buttons.index(row), row.index(btn), m.chat_id)
+            cache_buttons(m, sent.id)
 
 @bot.on(events.NewMessage)
 async def on_user(event):
@@ -90,7 +100,6 @@ async def on_user(event):
     if event.out or not event.text: return
     
     try:
-        import json
         if os.path.exists('pendientes.json'):
             with open('pendientes.json') as pf:
                 if str(event.sender_id) in json.load(pf): return
@@ -117,6 +126,17 @@ async def on_click(event):
                 await msgs[0].buttons[info[1]][info[2]].click()
                 return
         except: pass
+    try:
+        async for m in reader.iter_messages(SEARCH_GROUP, limit=30):
+            if m.buttons:
+                for row in m.buttons:
+                    for btn in row:
+                        bd = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
+                        if bd == data:
+                            await event.answer("⚡")
+                            await btn.click()
+                            return
+    except: pass
     await event.answer("⏳ Expiró")
 
 async def main():
