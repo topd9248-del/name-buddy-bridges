@@ -100,6 +100,15 @@ async def on_user(event):
         await event.reply("🎬 ¡BuddyPelis!\n👉 @BuddyMovies_official", buttons=[[Button.url("🎥 IR AL GRUPO", "https://t.me/BuddyMovies_official")]])
         return
     if event.out or not event.text: return
+    
+    # Verificar restricción
+    try:
+        import json, os
+        if os.path.exists('pendientes.json'):
+            with open('pendientes.json') as pf:
+                if str(event.sender_id) in json.load(pf):
+                    return
+    except: pass
     q = event.text.strip()
     if len(q) < 2: return
     try: name = (await event.get_sender()).first_name or "Usuario"
