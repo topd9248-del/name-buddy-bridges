@@ -16,6 +16,7 @@ FOOTER = "\n\n➠ @BuddyMovies_canal 🎬\n➠ @BuddyMovies_official 💬"
 os.environ['PYTHONOPTIMIZE'] = '2'
 gc.set_threshold(5000, 50, 50)
 user_sessions = OrderedDict()
+last_search_uid = None
 button_map = {}
 msg_map = {}
 
@@ -70,13 +71,15 @@ async def on_result(event):
         if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
     
     if m.media:
-        for uid, s in reversed(list(user_sessions.items())):
+        global last_search_uid
+        uid = last_search_uid
+        if uid and uid in user_sessions:
+            s = user_sessions[uid]
             raw = clean_text(m.text or "") + FOOTER
             sent = await reader.send_file(CANAL, m.media, caption=raw)
             link = f"https://t.me/{CANAL[1:]}/{sent.id}"
             await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
                 buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
-            break
 
 @reader.on(events.MessageEdited(chats=SEARCH_GROUP))
 async def on_edit(event):
@@ -110,6 +113,8 @@ async def on_user(event):
     try: name = (await event.get_sender()).first_name or "Usuario"
     except: name = "Usuario"
     user_sessions[event.sender_id] = {'name': name, 'rid': event.message.id, 't': time.time()}
+    global last_search_uid
+    last_search_uid = event.sender_id
     await reader.send_message(SEARCH_GROUP, q)
 
 @bot.on(events.CallbackQuery)
