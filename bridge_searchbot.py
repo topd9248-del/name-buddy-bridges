@@ -72,7 +72,15 @@ async def on_edit(event):
     text = clean_text(m.text)
     btns = filter_buttons(m.buttons)
     if m.id in msg_map:
-        try: await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns); return
+        try:
+            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=btns)
+            for row in m.buttons:
+                for btn in row:
+                    if btn.data:
+                        data = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
+                        button_map[(msg_map[m.id], data)] = (m.id, m.buttons.index(row), row.index(btn), m.chat_id)
+                        button_map[data] = (m.id, m.buttons.index(row), row.index(btn), m.chat_id)
+            return
         except: pass
     if user_sessions:
         uid = list(user_sessions.keys())[0]
