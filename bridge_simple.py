@@ -96,6 +96,8 @@ async def on_user(event):
 async def on_click(event):
     data = event.data.decode() if isinstance(event.data, bytes) else event.data
     if not data: return
+    
+    # Estrategia 1: buscar en button_map
     key = (event.message_id, data)
     info = button_map.get(key) or button_map.get(data)
     if info:
@@ -106,6 +108,20 @@ async def on_click(event):
                 await msgs[0].buttons[info[1]][info[2]].click()
                 return
         except: pass
+    
+    # Estrategia 2: buscar en últimos mensajes del bot externo
+    try:
+        async for m in reader.iter_messages(SEARCH_GROUP, limit=30):
+            if m.buttons:
+                for row in m.buttons:
+                    for btn in row:
+                        bd = btn.data.decode() if isinstance(btn.data, bytes) else btn.data
+                        if bd == data:
+                            await event.answer("⚡")
+                            await btn.click()
+                            return
+    except: pass
+    
     await event.answer("⏳ Expiró")
 
 async def main():
