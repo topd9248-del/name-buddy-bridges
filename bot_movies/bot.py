@@ -50,7 +50,7 @@ def cache_buttons(msg, our_msg_id):
                 button_map[(our_msg_id, data)] = (msg.id, msg.buttons.index(row), row.index(btn))
                 button_map[data] = (msg.id, msg.buttons.index(row), row.index(btn))
 
-@reader.on(events.NewMessage(chats=SEARCH_GROUP))
+@reader.on(events.NewMessage(chats="@pooppuuui"))
 async def on_result(event):
     m = event.message
     if not m.sender or not m.sender.bot: return
@@ -65,7 +65,7 @@ async def on_result(event):
         await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
             buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
 
-@reader.on(events.MessageEdited(chats=SEARCH_GROUP))
+@reader.on(events.MessageEdited(chats="@pooppuuui"))
 async def on_edit(event):
     m = event.message
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
