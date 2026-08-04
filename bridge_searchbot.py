@@ -74,6 +74,13 @@ async def on_result(event):
 async def on_edit(event):
     m = event.message
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
+    
+    # Auto-click en almacén (también en ediciones)
+    if "selecciona un almacén" in m.text.lower():
+        if m.buttons and m.buttons[0]:
+            await m.buttons[0][0].click()
+            return
+    
     text = clean_text(m.text)
     fb = filter_buttons(m.buttons)
     
