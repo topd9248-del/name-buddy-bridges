@@ -65,27 +65,19 @@ async def on_result(event):
         await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
             buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
 
-@reader.on(events.MessageEdited(chats="@pooppuuui"))
+@reader.on(events.MessageEdited())
 async def on_edit(event):
     m = event.message
-    if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
+    if not m.text or not m.buttons: return
+    if not user_sessions: return
+    
+    uid = list(user_sessions.keys())[-1]
+    s = user_sessions[uid]
     text = clean_text(m.text)
     fb = filter_btns(m.buttons)
     
-    if m.id in msg_map:
-        try:
-            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=fb)
-            cache_buttons(m, msg_map[m.id])
-            return
-        except: pass
-    
-    if user_sessions:
-        uid = list(user_sessions.keys())[-1]
-        s = user_sessions[uid]
-        sent = await bot.send_message(GRUPO, text[:4000], buttons=fb, reply_to=s['rid'])
-        if sent:
-            msg_map[m.id] = sent.id
-            cache_buttons(m, sent.id)
+    await bot.send_message(GRUPO, text[:4000], buttons=fb, reply_to=s['rid'])
+    print(f"📤 Enviado al grupo: {len(text)} chars")
 
 @bot.on(events.NewMessage)
 async def on_user(event):
