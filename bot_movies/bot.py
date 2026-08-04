@@ -76,8 +76,20 @@ async def on_edit(event):
     text = clean_text(m.text)
     fb = filter_btns(m.buttons)
     
-    await bot.send_message(GRUPO, text[:4000], buttons=fb, reply_to=s['rid'])
-    print(f"📤 Enviado al grupo: {len(text)} chars")
+    # Si ya existe, editar
+    if m.id in msg_map:
+        try:
+            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=fb)
+            cache_buttons(m, msg_map[m.id])
+            return
+        except: pass
+    
+    # Si no, crear nuevo
+    sent = await bot.send_message(GRUPO, text[:4000], buttons=fb, reply_to=s['rid'])
+    if sent:
+        msg_map[m.id] = sent.id
+        cache_buttons(m, sent.id)
+    print(f"📤 {'Editado' if m.id in msg_map else 'Nuevo'}: {len(text)} chars")
 
 @bot.on(events.NewMessage)
 async def on_user(event):
