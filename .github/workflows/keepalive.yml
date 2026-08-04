@@ -9,9 +9,13 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping buddy-bots
-        run: curl -s https://buddy-bots.onrender.com
+      - name: Ping buddy-movies
+        run: curl -s https://buddy-movies.onrender.com
+      - name: Ping buddy-notify
+        run: curl -s https://buddy-notify.onrender.com
       - name: Ping buddy-invite
         run: curl -s https://buddy-invite.onrender.com
       - name: Ping buddy-delete
         run: curl -s https://buddy-delete.onrender.com
+      - name: Ping buddy-chatgpt
+        run: curl -s https://buddy-chatgpt.onrender.com
