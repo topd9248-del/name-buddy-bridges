@@ -79,15 +79,6 @@ async def on_edit(event):
             return
         except: pass
     
-    # Si no existe, crear nuevo mensaje
-    if user_sessions:
-        uid = list(user_sessions.keys())[-1]
-        s = user_sessions[uid]
-        sent = await bot.send_message(GRUPO, text[:4000], buttons=fb, reply_to=s['rid'])
-        if sent:
-            msg_map[m.id] = sent.id
-            cache_buttons(m, sent.id)
-    
     if user_sessions:
         uid = list(user_sessions.keys())[-1]
         s = user_sessions[uid]
@@ -130,7 +121,6 @@ async def on_click(event):
                 await msgs[0].buttons[info[1]][info[2]].click()
                 return
         except: pass
-    # Buscar en últimos mensajes
     try:
         async for m in reader.iter_messages(SEARCH_GROUP, limit=30):
             if m.buttons:

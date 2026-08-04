@@ -18,7 +18,6 @@ gc.set_threshold(5000, 50, 50)
 user_sessions = OrderedDict()
 button_map = {}
 msg_map = {}
-search_msg_to_user = {}
 SKIP_BUTTONS = ['compartir bot', 'añadir a grupo', 'menú principal', 'share bot', 'add to group', 'main menu', 'inicio']
 
 bot = TelegramClient('search_v3', API_ID, API_HASH, retry_delay=3, auto_reconnect=True, timeout=15)
@@ -62,21 +61,9 @@ async def on_result(event):
     if m.text and "selecciona un almacén" in m.text.lower():
         if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
     
-    # Buscar al usuario que hizo esta búsqueda
-    uid = search_msg_to_user.get(m.id)
-    if not uid:
-        # Si no se encuentra, buscar en mensajes anteriores
-        async for old_msg in reader.iter_messages(SEARCH_GROUP, limit=10):
-            if old_msg.id in search_msg_to_user:
-                uid = search_msg_to_user[old_msg.id]
-                break
-    if not uid and user_sessions:
+    if m.media and user_sessions:
         uid = list(user_sessions.keys())[-1]
-    
-    if not uid or uid not in user_sessions: return
-    s = user_sessions[uid]
-    
-    if m.media and s:
+        s = user_sessions[uid]
         raw = clean_text(m.text or "") + FOOTER
         sent = await reader.send_file(CANAL, m.media, caption=raw)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
@@ -88,15 +75,10 @@ async def on_edit(event):
     m = event.message
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     
-    # Auto-click en método y almacén (ediciones)
     if "selecciona un método" in m.text.lower():
-        if m.buttons and m.buttons[0]:
-            await m.buttons[0][0].click()
-            return
+        if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
     if "selecciona un almacén" in m.text.lower():
-        if m.buttons and m.buttons[0]:
-            await m.buttons[0][0].click()
-            return
+        if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
     
     text = clean_text(m.text)
     fb = filter_buttons(m.buttons)
@@ -134,8 +116,7 @@ async def on_user(event):
     try: name = (await event.get_sender()).first_name or "Usuario"
     except: name = "Usuario"
     user_sessions[event.sender_id] = {'name': name, 'rid': event.message.id, 't': time.time()}
-    sent = await reader.send_message(SEARCH_GROUP, q)
-    search_msg_to_user[sent.id] = event.sender_id
+    await reader.send_message(SEARCH_GROUP, q)
 
 @bot.on(events.CallbackQuery)
 async def on_click(event):
