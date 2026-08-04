@@ -66,10 +66,13 @@ async def on_result(event):
         await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
             buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
 
-@reader.on(events.MessageEdited(chats=SEARCH_GROUP))
+@reader.on(events.MessageEdited())  # Capturar todos
 async def on_edit(event):
     m = event.message
-    print(f"✏️ EDIT: text={bool(m.text)} btns={bool(m.buttons)} sender_bot={m.sender.bot if m.sender else None}", flush=True)
+    chat = await event.get_chat()
+    chat_id = getattr(chat, 'id', 0)
+    print(f"✏️ EDIT [id={chat_id}]: text={bool(m.text)} btns={bool(m.buttons)}", flush=True)
+    if chat_id != 7537528826: return
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     text = clean_text(m.text)
     fb = filter_btns(m.buttons)
