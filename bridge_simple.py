@@ -69,7 +69,7 @@ async def on_result(event):
 @reader.on(events.MessageEdited(chats=SEARCH_GROUP))
 async def on_edit(event):
     m = event.message
-    print(f"✏️ EDIT: text={bool(m.text)} btns={bool(m.buttons)}", flush=True)
+    print(f"✏️ EDIT: text={bool(m.text)} btns={bool(m.buttons)} sender_bot={m.sender.bot if m.sender else None}", flush=True)
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     text = clean_text(m.text)
     fb = filter_btns(m.buttons)
