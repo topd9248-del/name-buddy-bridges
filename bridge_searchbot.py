@@ -76,7 +76,7 @@ async def on_result(event):
     if not uid or uid not in user_sessions: return
     s = user_sessions[uid]
     
-    if m.media
+    if m.media and s:
         raw = clean_text(m.text or "") + FOOTER
         sent = await reader.send_file(CANAL, m.media, caption=raw)
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
