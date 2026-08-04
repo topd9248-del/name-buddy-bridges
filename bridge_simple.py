@@ -72,7 +72,7 @@ async def on_edit(event):
     chat = await event.get_chat()
     chat_id = getattr(chat, 'id', 0)
     print(f"✏️ EDIT [id={chat_id}]: text={bool(m.text)} btns={bool(m.buttons)}", flush=True)
-    if chat_id != 7537528826: return
+    if chat_id != 2597111047: return
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     text = clean_text(m.text)
     fb = filter_btns(m.buttons)
