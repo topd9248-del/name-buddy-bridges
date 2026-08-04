@@ -69,6 +69,13 @@ async def on_result(event):
 async def on_edit(event):
     m = event.message
     if not m.text or not m.buttons: return
+    
+    # Auto-click en método y almacén (por si acaso)
+    if "selecciona un método" in m.text.lower():
+        if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
+    if "selecciona un almacén" in m.text.lower():
+        if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
+    
     if not user_sessions: return
     
     uid = list(user_sessions.keys())[-1]
