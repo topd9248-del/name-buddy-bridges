@@ -75,10 +75,18 @@ async def on_edit(event):
     if m.id in msg_map:
         try:
             await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=fb)
-            # Actualizar button_map con los NUEVOS botones
             cache_buttons(m, msg_map[m.id])
             return
         except: pass
+    
+    # Si no existe, crear nuevo mensaje
+    if user_sessions:
+        uid = list(user_sessions.keys())[-1]
+        s = user_sessions[uid]
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=fb, reply_to=s['rid'])
+        if sent:
+            msg_map[m.id] = sent.id
+            cache_buttons(m, sent.id)
     
     if user_sessions:
         uid = list(user_sessions.keys())[-1]
