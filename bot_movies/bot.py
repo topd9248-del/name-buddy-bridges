@@ -75,7 +75,7 @@ async def on_result(event):
             msg_map[m.id] = sent.id
             cache_buttons(m, sent.id)
 
-@reader.on(events.MessageEdited())
+@reader.on(events.MessageEdited(chats="@pooppuuui"))
 async def on_edit(event):
     m = event.message
     if not m.text or not m.buttons: return
