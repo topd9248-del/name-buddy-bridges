@@ -64,6 +64,16 @@ async def on_result(event):
         link = f"https://t.me/{CANAL[1:]}/{sent.id}"
         await bot.send_message(GRUPO, f"🎬 **{s['name']}**\n\n🔗 {link}", 
             buttons=[[Button.url("🎥 VER CONTENIDO", link)]], reply_to=s['rid'])
+    
+    elif m.text and m.buttons and user_sessions:
+        uid = list(user_sessions.keys())[-1]
+        s = user_sessions[uid]
+        text = clean_text(m.text)
+        fb = filter_btns(m.buttons)
+        sent = await bot.send_message(GRUPO, text[:4000], buttons=fb, reply_to=s['rid'])
+        if sent:
+            msg_map[m.id] = sent.id
+            cache_buttons(m, sent.id)
 
 @reader.on(events.MessageEdited())
 async def on_edit(event):
