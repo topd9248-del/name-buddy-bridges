@@ -53,6 +53,7 @@ def cache_buttons(msg, our_msg_id):
 @reader.on(events.NewMessage(chats=SEARCH_GROUP))
 async def on_result(event):
     m = event.message
+    print(f"📩 NEW: {bool(m.text)} {bool(m.media)}", flush=True)
     if not m.sender or not m.sender.bot: return
     if m.text and "buscando" in m.text.lower(): return
     
@@ -68,6 +69,7 @@ async def on_result(event):
 @reader.on(events.MessageEdited(chats=SEARCH_GROUP))
 async def on_edit(event):
     m = event.message
+    print(f"✏️ EDIT: text={bool(m.text)} btns={bool(m.buttons)}", flush=True)
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
     text = clean_text(m.text)
     fb = filter_btns(m.buttons)
