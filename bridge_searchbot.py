@@ -7,7 +7,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 API_ID = 28074212
 API_HASH = "b18dae908474a377684922f3e9d5b795"
 BOT_TOKEN = "8463069047:AAFw2frWMhqfELqxQzgplSODDC1kRuCJyII"
-SESSION_READER = "1AZWarzoBu7g2eIcbdmZQzP-9or5xcH-1RYocPu-po0Di1gzeBkSy7JDoIO0AC7Su5TV4Fjnb7YMXm4LQTVdMc4lu3WdzrfsO4kSbXJioBmJqjB5Ekw9s2m9inuZmhl7HUWe0Z-VnuwnvbXPirlABIZsizRntlynxzlr-6_TKy51NuKs3TwNrPVRiPDl4fiqBzq5X203YfHK6QMfp7pZQvXsKB8Psq8TQ41hC5ppM7SKB1XA-geqGMDInXsSVyR6OLSla7Skz76vXyl9JVQQKXlw6a462pAmbqEVvJ_SwA-GtrpIU06WQISTGskjnPNQiKE5nwrJjjhCM3fvq756Tq9Q6VBdsdgI="
+SESSION_READER = "1AZWarzQBuzncKy_mbzKcjlq0_XeKVuhMaiHWMBs3kkt9hmss9EcHTh9f9RtgQYkoDx4oXfLs8rnlwzNA8AHxmt47X2J3r4YJr0QVNVzX3meQKnDv1EKsnctVofcPlsHGuXPZutTrhs0-rtMFXO8TYMESuLbcu0BlENZDA6LVWzItTe17yMvgWexGLJMIyhO-yIrRxHr4838YkKxdxUflsSkjtSZIV8W4EWtrd6eOcTcZbaQyJEUT6jcyXrePbmfaOjMoOsx1PJF1dQisoPP_C-mRSHgp59Za4LmBM4EqQgzXeoPdUdXFRDkCJAfjzc3p6lnU7HqEtcKmm2EIzY43vj_iKSroOOo="
 SEARCH_GROUP = "@TlgramMovieSearch_Bot"
 CANAL = "@BuddyMovies_canal"
 GRUPO = "@BuddyMovies_official"
@@ -74,12 +74,6 @@ async def on_result(event):
 async def on_edit(event):
     m = event.message
     if not m.sender or not m.sender.bot or not m.text or not m.buttons: return
-    
-    if "selecciona un método" in m.text.lower():
-        if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
-    if "selecciona un almacén" in m.text.lower():
-        if m.buttons and m.buttons[0]: await m.buttons[0][0].click(); return
-    
     text = clean_text(m.text)
     fb = filter_buttons(m.buttons)
     
