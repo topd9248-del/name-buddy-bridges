@@ -75,11 +75,9 @@ async def on_edit(event):
     fb = filter_btns(m.buttons)
     
     if m.id in msg_map:
-        try:
-            await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=fb)
-            cache_buttons(m, msg_map[m.id])
-            return
-        except: pass
+        await bot.edit_message(GRUPO, msg_map[m.id], text=text[:4000], buttons=fb)
+        cache_buttons(m, msg_map[m.id])
+        return
     
     if user_sessions:
         uid = list(user_sessions.keys())[-1]
