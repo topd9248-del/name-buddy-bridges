@@ -80,15 +80,7 @@ async def main():
     await asyncio.gather(bot_client.run_until_disconnected(), user_client.run_until_disconnected())
 
 # Servidor HTTP para Render
-class H(BaseHTTPRequestHandler):
-    def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b"OK")
-threading.Thread(target=lambda: HTTPServer(("0.0.0.0", int(os.environ.get("PORT",10000))), H).serve_forever(), daemon=True).start()
+, daemon=True).start()
 
-def keep_alive():
-    while True:
-        time.sleep(600)
-        try: urllib.request.urlopen(f"http://localhost:{int(os.environ.get('PORT', 10000))}", timeout=5)
-        except: pass
-threading.Thread(target=keep_alive, daemon=True).start()
 
 asyncio.run(main())
