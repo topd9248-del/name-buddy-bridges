@@ -1,8 +1,8 @@
 import subprocess, os, sys, time, threading, urllib.request, gc
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-print("🎬 3 BOTS", flush=True)
-BRIDGES = ["bridge_simple.py", "bridge_searchbot.py", "bot_delete.py"]
+print("🎬 2 BOTS", flush=True)
+BRIDGES = ["bridge_simple.py", "bridge_searchbot.py"]
 
 def start(bot):
     while True:
@@ -13,7 +13,7 @@ def start(bot):
                     print(f"[{bot[:8]}] {line.strip()}", flush=True)
             p.wait()
         except: pass
-        time.sleep(3)
+        time.sleep(5)
         gc.collect()
 
 class H(BaseHTTPRequestHandler):
@@ -23,7 +23,7 @@ threading.Thread(target=lambda: HTTPServer(("0.0.0.0", int(os.environ.get("PORT"
 
 for b in BRIDGES:
     threading.Thread(target=start, args=(b,), daemon=True).start()
-    time.sleep(1)
+    time.sleep(2)
 
 while True:
     time.sleep(30)
