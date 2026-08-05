@@ -1,8 +1,8 @@
 import subprocess, os, sys, time, threading, urllib.request, gc
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-print("🎬 2 BOTS PELICULAS", flush=True)
-BRIDGES = ["bridge_simple.py", "bridge_searchbot.py"]
+print("🎬 3 BOTS", flush=True)
+BRIDGES = ["bridge_simple.py", "bridge_searchbot.py", "bot_delete.py"]
 
 def start(bot):
     while True:
