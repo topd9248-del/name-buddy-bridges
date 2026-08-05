@@ -152,7 +152,5 @@ async def main():
     print(f"✅ @BuddyNotify_Bot")
     await asyncio.gather(bot.run_until_disconnected(), reader.run_until_disconnected())
 
-, daemon=True).start()
-
 
 asyncio.run(main())

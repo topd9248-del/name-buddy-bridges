@@ -80,7 +80,5 @@ async def main():
     await asyncio.gather(bot_client.run_until_disconnected(), user_client.run_until_disconnected())
 
 # Servidor HTTP para Render
-, daemon=True).start()
-
 
 asyncio.run(main())
